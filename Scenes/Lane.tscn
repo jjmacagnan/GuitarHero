@@ -1,0 +1,44 @@
+[gd_scene load_steps=7 format=3 uid="uid://lane_scene"]
+
+[ext_resource type="Script" path="res://Scripts/Lane.cs" id="1_lane"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_track"]
+size = Vector3(1.8, 0.05, 60.0)
+
+[sub_resource type="StandardMaterial3D" id="Mat_track"]
+albedo_color = Color(0.1, 0.1, 0.1, 0.85)
+transparency = 1
+cull_mode = 2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_btn"]
+top_radius = 0.7
+bottom_radius = 0.7
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Mat_btn"]
+albedo_color = Color(0.2, 1.0, 0.2, 1)
+emission_enabled = true
+emission = Color(0.0, 0.3, 0.0, 1)
+emission_energy_multiplier = 1.0
+
+[sub_resource type="BoxShape3D" id="BoxShape_hitzone"]
+size = Vector3(1.8, 3.0, 1.8)
+
+[node name="Lane" type="Node3D"]
+script = ExtResource("1_lane")
+
+[node name="Track" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+mesh = SubResource("BoxMesh_track")
+material_override = SubResource("Mat_track")
+
+[node name="Button" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("CylinderMesh_btn")
+material_override = SubResource("Mat_btn")
+
+[node name="HitZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="HitZone"]
+shape = SubResource("BoxShape_hitzone")
