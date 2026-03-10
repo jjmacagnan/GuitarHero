@@ -175,24 +175,55 @@ public partial class Lane : Node3D
 
 	private void OnKeyPressed()
 	{
-		// Pulso de brilho nos dois elementos do botão
-		if (_buttonCapMat != null)
+		// Animação de pressionamento: botão "desce" e diminui de tamanho
+		if (_buttonCapMesh != null)
 		{
-			_buttonCapMat.Emission = LaneColor * 4f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_buttonCapMat != null) _buttonCapMat.Emission = LaneColor * 1.0f; };
+			var originalPos = _buttonCapMesh.Position;
+			var originalScale = _buttonCapMesh.Scale;
+			
+			// Tween: desce 0.04 unidades e encolhe para 0.95x
+			var tw = CreateTween();
+			tw.SetTrans(Tween.TransitionType.Quad);
+			tw.SetEase(Tween.EaseType.InOut);
+			tw.TweenProperty(_buttonCapMesh, "position:y", originalPos.Y - 0.04f, 0.08f);
+			tw.Parallel().TweenProperty(_buttonCapMesh, "scale", originalScale * 0.95f, 0.08f);
+			
+			// Pulso de brilho forte
+			if (_buttonCapMat != null)
+			{
+				_buttonCapMat.Emission = LaneColor * 5f;
+				_buttonCapMat.EmissionEnergyMultiplier = 4.0f;
+			}
+			
+			// Volta ao normal
+			var timer = GetTree().CreateTimer(0.15f);
+			timer.Timeout += () =>
+			{
+				if (_buttonCapMesh == null || !IsInstanceValid(_buttonCapMesh)) return;
+				var restoreTw = CreateTween();
+				restoreTw.SetTrans(Tween.TransitionType.Quad);
+				restoreTw.SetEase(Tween.EaseType.Out);
+				restoreTw.TweenProperty(_buttonCapMesh, "position:y", originalPos.Y, 0.1f);
+				restoreTw.Parallel().TweenProperty(_buttonCapMesh, "scale", originalScale, 0.1f);
+			};
 		}
+		
+		// Base também faz pulso
 		if (_buttonBaseMat != null)
 		{
-			_buttonBaseMat.Emission = LaneColor * 2.5f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_buttonBaseMat != null) _buttonBaseMat.Emission = LaneColor * 0.5f; };
+			_buttonBaseMat.Emission = LaneColor * 3.5f;
+			_buttonBaseMat.EmissionEnergyMultiplier = 3.0f;
+			var t = GetTree().CreateTimer(0.15f);
+			t.Timeout += () => { if (_buttonBaseMat != null) _buttonBaseMat.EmissionEnergyMultiplier = 1.2f; };
 		}
+		
+		// HitZone brilha muito
 		if (_hitZoneMat != null)
 		{
-			_hitZoneMat.Emission = LaneColor * 6f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_hitZoneMat != null) _hitZoneMat.Emission = LaneColor * 2.5f; };
+			_hitZoneMat.Emission = LaneColor * 8f;
+			_hitZoneMat.EmissionEnergyMultiplier = 7.0f;
+			var t = GetTree().CreateTimer(0.15f);
+			t.Timeout += () => { if (_hitZoneMat != null) _hitZoneMat.EmissionEnergyMultiplier = 3.0f; };
 		}
 
 		// Hit detection
