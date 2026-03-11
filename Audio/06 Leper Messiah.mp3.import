@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c0pwgny3hnfok"
+path="res://.godot/imported/06 Leper Messiah.mp3-695873e528586d7a2553e8cb1995ca50.mp3str"
+
+[deps]
+
+source_file="res://Audio/06 Leper Messiah.mp3"
+dest_files=["res://.godot/imported/06 Leper Messiah.mp3-695873e528586d7a2553e8cb1995ca50.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

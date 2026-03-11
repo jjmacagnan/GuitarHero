@@ -135,11 +135,14 @@ public partial class GameManager : Node3D
 		GameData.ResetRun();
 		GameData.TotalNotes = _totalNotes;
 
-		// 4. Tempo inicial: áudio começa após 0.5s de buffer
-		//    _songTime acompanha o tempo do áudio:
-		//      _songTime = 0  → áudio está em t=0
-		//      _songTime < 0  → antes do áudio começar
-		const double AudioDelay = 0.5;
+		// 4. Tempo inicial.
+		//    _songTime = 0  → áudio está em t=0 (o que o jogador ouve agora)
+		//    _songTime < 0  → antes do áudio começar
+		//
+		//    AudioDelay: buffer mínimo antes do Play() para evitar clique de início.
+		//    outputLatency: latência real do driver de áudio (compensa o buffer de saída).
+		double outputLatency = AudioServer.GetOutputLatency();
+		const double AudioDelay = 0.3;
 		_songTime = -TravelTime - AudioDelay;
 
 		// 5. Toca música com delay sincronizado com _songTime
@@ -148,7 +151,7 @@ public partial class GameManager : Node3D
 			double delay = TravelTime + AudioDelay;
 			var t = GetTree().CreateTimer(delay);
 			t.Timeout += () => { _audio.Play(); };
-			GD.Print($"[GameManager] Música toca em {delay:F2}s (TravelTime={TravelTime:F2}s)");
+			GD.Print($"[GameManager] Música em {delay:F2}s | TravelTime={TravelTime:F2}s | Latência={outputLatency*1000:F0}ms");
 		}
 
 		InitParticlePool();
@@ -180,10 +183,11 @@ public partial class GameManager : Node3D
 	{
 		if (_songEnded) return;
 
-		// Ancora _songTime ao clock real do áudio quando está tocando.
-		// Evita drift acumulado por variações de framerate.
+		// Ancora _songTime ao clock real do áudio compensando a latência de saída.
+		// GetPlaybackPosition() retorna a posição no stream (não o que o jogador ouve).
+		// Subtrair outputLatency faz _songTime bater com o áudio percebido.
 		if (_audio != null && _audio.Playing)
-			_songTime = _audio.GetPlaybackPosition();
+			_songTime = _audio.GetPlaybackPosition() - AudioServer.GetOutputLatency();
 		else
 			_songTime += delta;
 
@@ -203,6 +207,17 @@ public partial class GameManager : Node3D
 				_nextNoteIndex++;
 			}
 			else break;
+		}
+
+		// Todos os spawns feitos + áudio encerrou → fim de música.
+		// Garante que EndSong é chamado mesmo que nem todas as notas
+		// tenham sido resolvidas (hit/miss) — evita notas infinitas.
+		if (!_songEnded
+			&& _nextNoteIndex >= _noteList.Count
+			&& _songTime > 0
+			&& (_audio == null || !_audio.Playing))
+		{
+			CallDeferred(nameof(EndSong));
 		}
 	}
 
