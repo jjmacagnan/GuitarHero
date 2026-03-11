@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 
 /// <summary>
@@ -21,6 +22,7 @@ public partial class GameManager : Node3D
 	private Label             _comboLabel;
 	private Label             _multLabel;
 	private Label             _feedbackLabel;
+	private Label             _accuracyLabel;
 
 	// ── Pool de partículas (uma por lane, reutilizável) ───────────────────
 	private GpuParticles3D[] _hitParticles;
@@ -31,6 +33,10 @@ public partial class GameManager : Node3D
 	private int    _multiplier   = 1;
 	private int    _resolvedNotes;
 	private bool   _songEnded;
+	private bool   _paused;
+
+	// ── Pause UI ───────────────────────────────────────────────────────
+	private Control _pauseOverlay;
 
 	private double        _songTime;
 	private int           _nextNoteIndex;
@@ -51,11 +57,15 @@ public partial class GameManager : Node3D
 	};
 
 	private static readonly Key[] LaneKeys =
-		{ Key.A, Key.S, Key.D, Key.F, Key.Space };
+		{ Key.A, Key.S, Key.J, Key.K, Key.L };
 
 	// Nomes das ações no InputMap (podem ser reconfigurados em Project → Input Map)
 	public static readonly string[] LaneActions =
 		{ "lane_0", "lane_1", "lane_2", "lane_3", "lane_4" };
+
+	// Mapeamento de gamepad por lane
+	// Verde=L2, Vermelho=L1, Amarelo=R1, Azul=R2, Laranja=X
+	// L2/R2 são eixos (triggers), os demais são botões digitais
 
 	// ── _Ready ─────────────────────────────────────────────────────────────
 	public override void _Ready()
@@ -68,6 +78,7 @@ public partial class GameManager : Node3D
 		_comboLabel    = GetNodeOrNull<Label>("HUD/ComboLabel");
 		_multLabel     = GetNodeOrNull<Label>("HUD/MultLabel");
 		_feedbackLabel = GetNodeOrNull<Label>("HUD/FeedbackLabel");
+		_accuracyLabel = GetNodeOrNull<Label>("HUD/AccuracyLabel");
 
 		// Inicializa lanes
 		_lanes = new Lane[5];
@@ -133,11 +144,14 @@ public partial class GameManager : Node3D
 		GameData.ResetRun();
 		GameData.TotalNotes = _totalNotes;
 
-		// 4. Tempo inicial: áudio começa após 0.5s de buffer
-		//    _songTime acompanha o tempo do áudio:
-		//      _songTime = 0  → áudio está em t=0
-		//      _songTime < 0  → antes do áudio começar
-		const double AudioDelay = 0.5;
+		// 4. Tempo inicial.
+		//    _songTime = 0  → áudio está em t=0 (o que o jogador ouve agora)
+		//    _songTime < 0  → antes do áudio começar
+		//
+		//    AudioDelay: buffer mínimo antes do Play() para evitar clique de início.
+		//    outputLatency: latência real do driver de áudio (compensa o buffer de saída).
+		double outputLatency = AudioServer.GetOutputLatency();
+		const double AudioDelay = 0.3;
 		_songTime = -TravelTime - AudioDelay;
 
 		// 5. Toca música com delay sincronizado com _songTime
@@ -146,10 +160,11 @@ public partial class GameManager : Node3D
 			double delay = TravelTime + AudioDelay;
 			var t = GetTree().CreateTimer(delay);
 			t.Timeout += () => { _audio.Play(); };
-			GD.Print($"[GameManager] Música toca em {delay:F2}s (TravelTime={TravelTime:F2}s)");
+			GD.Print($"[GameManager] Música em {delay:F2}s | TravelTime={TravelTime:F2}s | Latência={outputLatency*1000:F0}ms");
 		}
 
 		InitParticlePool();
+		BuildPauseOverlay();
 		UpdateHUD();
 	}
 
@@ -164,21 +179,145 @@ public partial class GameManager : Node3D
 		{
 			string action = LaneActions[i];
 			if (!InputMap.HasAction(action))
-			{
 				InputMap.AddAction(action);
-				var ev = new InputEventKey { Keycode = LaneKeys[i] };
-				InputMap.ActionAddEvent(action, ev);
-				GD.Print($"[GameManager] InputMap: '{action}' → {LaneKeys[i]}");
+
+			// Teclado — adiciona somente se ainda não mapeado
+			var evKey = new InputEventKey { Keycode = LaneKeys[i] };
+			if (!InputMap.ActionHasEvent(action, evKey))
+			{
+				InputMap.ActionAddEvent(action, evKey);
+				GD.Print($"[GameManager] InputMap: '{action}' → tecla {LaneKeys[i]}");
+			}
+
+				// Gamepad — sempre garante que o evento esteja mapeado
+			InputEvent evJoy = i switch
+			{
+				0 => new InputEventJoypadMotion  { Axis = JoyAxis.TriggerLeft,  AxisValue =  1f }, // L2
+				1 => new InputEventJoypadButton  { ButtonIndex = JoyButton.LeftShoulder },          // L1
+				2 => new InputEventJoypadButton  { ButtonIndex = JoyButton.RightShoulder },         // R1
+				3 => new InputEventJoypadMotion  { Axis = JoyAxis.TriggerRight, AxisValue =  1f }, // R2
+				_ => new InputEventJoypadButton  { ButtonIndex = JoyButton.Y },                    // X físico (Switch) = JoyButton.Y no Godot
+			};
+			if (!InputMap.ActionHasEvent(action, evJoy))
+			{
+				InputMap.ActionAddEvent(action, evJoy);
+				GD.Print($"[GameManager] InputMap: '{action}' → gamepad {evJoy}");
 			}
 		}
+
+		// Start / Menu / + → pause (adiciona ao ui_cancel existente)
+		const string pauseAction = "ui_cancel";
+		if (!InputMap.HasAction(pauseAction))
+			InputMap.AddAction(pauseAction);
+
+		var evStart = new InputEventJoypadButton { ButtonIndex = JoyButton.Start };
+		if (!InputMap.ActionHasEvent(pauseAction, evStart))
+			InputMap.ActionAddEvent(pauseAction, evStart);
+	}
+
+	// ── Pause ──────────────────────────────────────────────────────────────
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		if (@event.IsActionPressed("ui_cancel")) // ESC
+		{
+			if (_songEnded) return;
+			TogglePause();
+			GetViewport().SetInputAsHandled();
+		}
+	}
+
+	private void TogglePause()
+	{
+		_paused = !_paused;
+		GetTree().Paused = _paused;
+
+		if (_paused)
+		{
+			if (_audio != null) _audio.StreamPaused = true;
+			_pauseOverlay?.Show();
+		}
+		else
+		{
+			if (_audio != null) _audio.StreamPaused = false;
+			_pauseOverlay?.Hide();
+		}
+	}
+
+	private void ResumeGame()  => TogglePause();
+	private void RestartSong() { GetTree().Paused = false; GetTree().ReloadCurrentScene(); }
+	private void QuitToMenu()  { GetTree().Paused = false; GetTree().ChangeSceneToFile("res://Scenes/SongSelect.tscn"); }
+
+	private void BuildPauseOverlay()
+	{
+		var hud = GetNodeOrNull<CanvasLayer>("HUD");
+		if (hud == null) return;
+
+		_pauseOverlay = new Control();
+		_pauseOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		_pauseOverlay.ProcessMode = ProcessModeEnum.Always; // funciona mesmo com tree pausada
+
+		// Fundo escuro semi-transparente
+		var bg = new ColorRect();
+		bg.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+		bg.Color = new Color(0f, 0f, 0f, 0.75f);
+		_pauseOverlay.AddChild(bg);
+
+		// Container central
+		var vbox = new VBoxContainer();
+		vbox.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.Center);
+		vbox.OffsetLeft   = -160;
+		vbox.OffsetRight  =  160;
+		vbox.OffsetTop    = -130;
+		vbox.OffsetBottom =  130;
+		vbox.AddThemeConstantOverride("separation", 16);
+		vbox.Alignment = BoxContainer.AlignmentMode.Center;
+
+		// Título
+		var title = new Label { Text = "PAUSADO", HorizontalAlignment = HorizontalAlignment.Center };
+		title.AddThemeFontSizeOverride("font_size", 42);
+		title.AddThemeColorOverride("font_color", new Color(0.2f, 0.9f, 1f));
+		vbox.AddChild(title);
+
+		// Botões
+		var btnResume  = MakePauseButton("Continuar",       ResumeGame);
+		var btnRestart = MakePauseButton("Recomeçar",       RestartSong);
+		var btnQuit    = MakePauseButton("Sair para Menu",  QuitToMenu);
+
+		vbox.AddChild(btnResume);
+		vbox.AddChild(btnRestart);
+		vbox.AddChild(btnQuit);
+
+		_pauseOverlay.AddChild(vbox);
+		_pauseOverlay.Hide();
+		hud.AddChild(_pauseOverlay);
+	}
+
+	private static Button MakePauseButton(string text, Action callback)
+	{
+		var btn = new Button
+		{
+			Text              = text,
+			CustomMinimumSize = new Vector2(280, 52),
+			ProcessMode       = ProcessModeEnum.Always,
+		};
+		btn.AddThemeFontSizeOverride("font_size", 22);
+		btn.Pressed += callback;
+		return btn;
 	}
 
 	// ── _Process ───────────────────────────────────────────────────────────
 	public override void _Process(double delta)
 	{
-		if (_songEnded) return;
+		if (_songEnded || _paused) return;
 
-		_songTime += delta;
+		// Ancora _songTime ao clock real do áudio compensando a latência de saída.
+		// GetPlaybackPosition() retorna a posição no stream (não o que o jogador ouve).
+		// Subtrair outputLatency faz _songTime bater com o áudio percebido.
+		if (_audio != null && _audio.Playing)
+			_songTime = _audio.GetPlaybackPosition() - AudioServer.GetOutputLatency();
+		else
+			_songTime += delta;
+
 		SpawnNotes();
 		UpdateHUD();
 	}
@@ -195,6 +334,17 @@ public partial class GameManager : Node3D
 				_nextNoteIndex++;
 			}
 			else break;
+		}
+
+		// Todos os spawns feitos + áudio encerrou → fim de música.
+		// Garante que EndSong é chamado mesmo que nem todas as notas
+		// tenham sido resolvidas (hit/miss) — evita notas infinitas.
+		if (!_songEnded
+			&& _nextNoteIndex >= _noteList.Count
+			&& _songTime > 0
+			&& (_audio == null || !_audio.Playing))
+		{
+			CallDeferred(nameof(EndSong));
 		}
 	}
 
@@ -228,9 +378,10 @@ public partial class GameManager : Node3D
 		string label;
 		Color  color;
 
-		if      (dist < 0.4f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
-		else if (dist < 1.0f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
-		else                  { baseScore =  50; label = "GOOD";     color = Colors.White;  }
+		// Thresholds com 20% de margem antes e depois da hitline
+		if      (dist < 0.48f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
+		else if (dist < 1.20f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
+		else                   { baseScore =  50; label = "GOOD";     color = Colors.White;  }
 
 		_score += baseScore * _multiplier;
 		GameData.NotesHit++;
@@ -368,5 +519,24 @@ public partial class GameManager : Node3D
 		if (_scoreLabel != null) _scoreLabel.Text = $"Score: {_score:N0}";
 		if (_comboLabel != null) _comboLabel.Text = _combo > 1 ? $"x{_combo} Combo" : "";
 		if (_multLabel  != null) _multLabel.Text  = _multiplier > 1 ? $"{_multiplier}x" : "";
+
+		if (_accuracyLabel != null)
+		{
+			if (_resolvedNotes > 0)
+			{
+				float acc = (float)GameData.NotesHit / _resolvedNotes * 100f;
+				_accuracyLabel.Text = $"{acc:F1}%";
+				Color col = acc >= 95f ? Colors.Cyan
+						  : acc >= 85f ? Colors.LightGreen
+						  : acc >= 70f ? Colors.Yellow
+						  : acc >= 55f ? new Color(1f, 0.55f, 0f)
+						  :              Colors.Red;
+				_accuracyLabel.AddThemeColorOverride("font_color", col);
+			}
+			else
+			{
+				_accuracyLabel.Text = "--%";
+			}
+		}
 	}
 }

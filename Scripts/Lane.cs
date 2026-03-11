@@ -11,18 +11,15 @@ public partial class Lane : Node3D
 	private MeshInstance3D     _trackMesh;
 	private StandardMaterial3D _trackMat;
 
-	// ── Botão: base larga (disco) + cap elevado ────────────────────────────
-	private MeshInstance3D     _buttonBaseMesh;   // disco externo, plano
+	// ── Botão: anel externo (base) + dome (cap estilo GH) ─────────────────
+	private MeshInstance3D     _buttonBaseMesh;   // anel externo, plano
 	private StandardMaterial3D _buttonBaseMat;
-	private MeshInstance3D     _buttonCapMesh;    // cilindro central, mais alto
+	private MeshInstance3D     _buttonCapMesh;    // dome esférico central
 	private StandardMaterial3D _buttonCapMat;
 
 	// ── Indicador de hitline ───────────────────────────────────────────────
 	private MeshInstance3D     _hitZoneMesh;
 	private StandardMaterial3D _hitZoneMat;
-
-	// ── Label 3D com tecla acima do botão ─────────────────────────────────
-	private Label3D _keyLabel;
 
 	// ── Notas ──────────────────────────────────────────────────────────────
 	private readonly List<Note> _activeNotes     = new();
@@ -64,25 +61,37 @@ public partial class Lane : Node3D
 			_buttonBaseMesh.Position = new Vector3(0f, 0.04f, 0f);
 			AddChild(_buttonBaseMesh);
 		}
-		_buttonBaseMat = new StandardMaterial3D();
+		_buttonBaseMat = new StandardMaterial3D
+		{
+			AlbedoColor              = Colors.Gray,
+			EmissionEnabled          = true,
+			Emission                 = Colors.Gray,
+			EmissionEnergyMultiplier = 0.5f
+		};
 		_buttonBaseMesh.MaterialOverride = _buttonBaseMat;
 
-		// 3. Cap do botão — cilindro central mais alto (dá profundidade de botão)
+		// 3. Cap do botão — dome esférico estilo Guitar Hero
 		_buttonCapMesh = GetNodeOrNull<MeshInstance3D>("ButtonCap");
 		if (_buttonCapMesh == null)
 		{
 			_buttonCapMesh = new MeshInstance3D { Name = "ButtonCap" };
-			_buttonCapMesh.Mesh = new CylinderMesh
+			_buttonCapMesh.Mesh = new SphereMesh
 			{
-				TopRadius    = 0.60f,
-				BottomRadius = 0.62f,
-				Height       = 0.26f,
-				RadialSegments = 24
+				Radius         = 0.52f,
+				Height         = 1.04f,
+				RadialSegments = 24,
+				Rings          = 12
 			};
-			_buttonCapMesh.Position = new Vector3(0f, 0.17f, 0f);
+			_buttonCapMesh.Position = new Vector3(0f, 0.10f, 0f);
 			AddChild(_buttonCapMesh);
 		}
-		_buttonCapMat = new StandardMaterial3D();
+		_buttonCapMat = new StandardMaterial3D
+		{
+			AlbedoColor              = Colors.White,
+			EmissionEnabled          = true,
+			Emission                 = Colors.White,
+			EmissionEnergyMultiplier = 1.0f
+		};
 		_buttonCapMesh.MaterialOverride = _buttonCapMat;
 
 		// 4. HitZone marker — barra brilhante na hitline
@@ -92,28 +101,17 @@ public partial class Lane : Node3D
 			_hitZoneMesh = new MeshInstance3D { Name = "HitZoneMarker" };
 			_hitZoneMesh.Mesh     = new BoxMesh { Size = new Vector3(1.85f, 0.06f, 0.28f) };
 			_hitZoneMesh.Position = new Vector3(0f, 0.03f, -0.8f);
-			_hitZoneMat = new StandardMaterial3D();
+			_hitZoneMat = new StandardMaterial3D
+			{
+				AlbedoColor              = Colors.Cyan,
+				EmissionEnabled          = true,
+				Emission                 = Colors.Cyan,
+				EmissionEnergyMultiplier = 2.0f
+			};
 			_hitZoneMesh.MaterialOverride = _hitZoneMat;
 			AddChild(_hitZoneMesh);
 		}
 		else { _hitZoneMat = _hitZoneMesh.MaterialOverride as StandardMaterial3D; }
-
-		// 5. Label 3D com a tecla acima do botão
-		_keyLabel = GetNodeOrNull<Label3D>("KeyLabel");
-		if (_keyLabel == null)
-		{
-			_keyLabel = new Label3D
-			{
-				Name                = "KeyLabel",
-				PixelSize           = 0.012f,
-				FontSize            = 52,
-				Position            = new Vector3(0f, 0.78f, 0f),
-				Billboard           = BaseMaterial3D.BillboardModeEnum.Enabled,
-				HorizontalAlignment = HorizontalAlignment.Center,
-				OutlineSize         = 6,
-			};
-			AddChild(_keyLabel);
-		}
 
 		ApplyColor();
 	}
@@ -153,11 +151,6 @@ public partial class Lane : Node3D
 			_hitZoneMat.EmissionEnergyMultiplier = 3.0f;
 		}
 
-		if (_keyLabel != null)
-		{
-			_keyLabel.Text     = InputKey == Key.Space ? "SPC" : InputKey.ToString();
-			_keyLabel.Modulate = LaneColor;
-		}
 	}
 
 	public override void _Input(InputEvent @event)
@@ -175,24 +168,21 @@ public partial class Lane : Node3D
 
 	private void OnKeyPressed()
 	{
-		// Pulso de brilho nos dois elementos do botão
+		// Brilho instantâneo ao pressionar (apaga ao soltar em OnKeyReleased)
 		if (_buttonCapMat != null)
 		{
-			_buttonCapMat.Emission = LaneColor * 4f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_buttonCapMat != null) _buttonCapMat.Emission = LaneColor * 1.0f; };
+			_buttonCapMat.Emission = LaneColor * 6f;
+			_buttonCapMat.EmissionEnergyMultiplier = 5.0f;
 		}
 		if (_buttonBaseMat != null)
 		{
-			_buttonBaseMat.Emission = LaneColor * 2.5f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_buttonBaseMat != null) _buttonBaseMat.Emission = LaneColor * 0.5f; };
+			_buttonBaseMat.Emission = LaneColor * 3.5f;
+			_buttonBaseMat.EmissionEnergyMultiplier = 3.0f;
 		}
 		if (_hitZoneMat != null)
 		{
-			_hitZoneMat.Emission = LaneColor * 6f;
-			var t = GetTree().CreateTimer(0.12f);
-			t.Timeout += () => { if (_hitZoneMat != null) _hitZoneMat.Emission = LaneColor * 2.5f; };
+			_hitZoneMat.Emission = LaneColor * 8f;
+			_hitZoneMat.EmissionEnergyMultiplier = 7.0f;
 		}
 
 		// Hit detection
@@ -218,6 +208,23 @@ public partial class Lane : Node3D
 		if (_currentHoldNote != null && IsInstanceValid(_currentHoldNote))
 			_currentHoldNote.ReleaseHold();
 		_currentHoldNote = null;
+
+		// Restaura emissão padrão (valores de ApplyColor)
+		if (_buttonCapMat != null)
+		{
+			_buttonCapMat.Emission = LaneColor * 1.0f;
+			_buttonCapMat.EmissionEnergyMultiplier = 2.0f;
+		}
+		if (_buttonBaseMat != null)
+		{
+			_buttonBaseMat.Emission = LaneColor * 0.5f;
+			_buttonBaseMat.EmissionEnergyMultiplier = 1.2f;
+		}
+		if (_hitZoneMat != null)
+		{
+			_hitZoneMat.Emission = LaneColor * 2.5f;
+			_hitZoneMat.EmissionEnergyMultiplier = 3.0f;
+		}
 	}
 
 	public override void _Process(double delta)
@@ -232,23 +239,25 @@ public partial class Lane : Node3D
 
 		if (isHolding)
 		{
-			// Pulso lento de hold (já implementado antes)
-			float pulse = (Mathf.Sin((float)Time.GetTicksMsec() * 0.001f * Mathf.Pi * 4f) + 1f) * 0.5f;
-			if (_hitZoneMat   != null) _hitZoneMat.EmissionEnergyMultiplier   = Mathf.Lerp(2.5f, 7.0f, pulse);
-			if (_buttonCapMat != null) _buttonCapMat.EmissionEnergyMultiplier = Mathf.Lerp(1.5f, 5.0f, pulse);
+			// Pulso lento e profundo de hold (visual contínuo forte)
+			float holdPulse = (Mathf.Sin((float)Time.GetTicksMsec() * 0.001f * Mathf.Pi * 3f) + 1f) * 0.5f;
+			if (_hitZoneMat   != null) _hitZoneMat.EmissionEnergyMultiplier   = Mathf.Lerp(3.5f, 9.0f, holdPulse);
+			if (_buttonCapMat != null) _buttonCapMat.EmissionEnergyMultiplier = Mathf.Lerp(2.5f, 7.0f, holdPulse);
+			if (_buttonBaseMat != null) _buttonBaseMat.EmissionEnergyMultiplier = Mathf.Lerp(1.5f, 4.0f, holdPulse);
 		}
 		else if (noteInWindow)
 		{
 			// Pulso rápido: "momento para clicar"
-			float pulse = (Mathf.Sin((float)Time.GetTicksMsec() * 0.001f * Mathf.Pi * 8f) + 1f) * 0.5f;
-			if (_hitZoneMat   != null) _hitZoneMat.EmissionEnergyMultiplier   = Mathf.Lerp(3.0f, 8.0f, pulse);
-			if (_buttonCapMat != null) _buttonCapMat.EmissionEnergyMultiplier = Mathf.Lerp(2.0f, 6.0f, pulse);
+			float readyPulse = (Mathf.Sin((float)Time.GetTicksMsec() * 0.001f * Mathf.Pi * 8f) + 1f) * 0.5f;
+			if (_hitZoneMat   != null) _hitZoneMat.EmissionEnergyMultiplier   = Mathf.Lerp(3.0f, 8.0f, readyPulse);
+			if (_buttonCapMat != null) _buttonCapMat.EmissionEnergyMultiplier = Mathf.Lerp(2.0f, 6.0f, readyPulse);
 		}
 		else if (_wasHolding || _wasNoteInWindow)
 		{
 			// Restaura valores padrão definidos em ApplyColor
 			if (_hitZoneMat   != null) _hitZoneMat.EmissionEnergyMultiplier   = 3.0f;
 			if (_buttonCapMat != null) _buttonCapMat.EmissionEnergyMultiplier = 2.0f;
+			if (_buttonBaseMat != null) _buttonBaseMat.EmissionEnergyMultiplier = 1.2f;
 		}
 
 		_wasHolding      = isHolding;
@@ -268,7 +277,11 @@ public partial class Lane : Node3D
 		note.NoteMissed += (n) =>
 		{
 			_activeNotes.Remove(n);
-			if (_currentHoldNote == n) _currentHoldNote = null;
+			if (_currentHoldNote == n)
+			{
+				_currentHoldNote = null;
+				ShowReleasePenalty();
+			}
 			EmitSignal(SignalName.NoteMissedInLane, LaneIndex);
 		};
 
@@ -276,6 +289,23 @@ public partial class Lane : Node3D
 		{
 			if (_currentHoldNote == n) _currentHoldNote = null;
 			EmitSignal(SignalName.HoldCompleteInLane, LaneIndex, n);
+		};
+	}
+
+	private void ShowReleasePenalty()
+	{
+		if (_hitZoneMat == null) return;
+		var originalMat = _hitZoneMat.EmissionEnergyMultiplier;
+		_hitZoneMat.Emission = Colors.Red * 2f;
+		_hitZoneMat.EmissionEnergyMultiplier = 8f;
+		var t = GetTree().CreateTimer(0.15f);
+		t.Timeout += () =>
+		{
+			if (_hitZoneMat != null)
+			{
+				_hitZoneMat.Emission = LaneColor * 2.5f;
+				_hitZoneMat.EmissionEnergyMultiplier = originalMat;
+			}
 		};
 	}
 }

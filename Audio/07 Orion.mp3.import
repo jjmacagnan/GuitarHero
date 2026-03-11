@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://csywp6u1vy4rk"
+path="res://.godot/imported/07 Orion.mp3-fe58a619229ea4325a1ef8e7f836c8e1.mp3str"
+
+[deps]
+
+source_file="res://Audio/07 Orion.mp3"
+dest_files=["res://.godot/imported/07 Orion.mp3-fe58a619229ea4325a1ef8e7f836c8e1.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
