@@ -63,6 +63,10 @@ public partial class GameManager : Node3D
 	public static readonly string[] LaneActions =
 		{ "lane_0", "lane_1", "lane_2", "lane_3", "lane_4" };
 
+	// Mapeamento de gamepad por lane
+	// Verde=L2, Vermelho=L1, Amarelo=R1, Azul=R2, Laranja=X
+	// L2/R2 são eixos (triggers), os demais são botões digitais
+
 	// ── _Ready ─────────────────────────────────────────────────────────────
 	public override void _Ready()
 	{
@@ -175,13 +179,40 @@ public partial class GameManager : Node3D
 		{
 			string action = LaneActions[i];
 			if (!InputMap.HasAction(action))
-			{
 				InputMap.AddAction(action);
-				var ev = new InputEventKey { Keycode = LaneKeys[i] };
-				InputMap.ActionAddEvent(action, ev);
-				GD.Print($"[GameManager] InputMap: '{action}' → {LaneKeys[i]}");
+
+			// Teclado — adiciona somente se ainda não mapeado
+			var evKey = new InputEventKey { Keycode = LaneKeys[i] };
+			if (!InputMap.ActionHasEvent(action, evKey))
+			{
+				InputMap.ActionAddEvent(action, evKey);
+				GD.Print($"[GameManager] InputMap: '{action}' → tecla {LaneKeys[i]}");
+			}
+
+				// Gamepad — sempre garante que o evento esteja mapeado
+			InputEvent evJoy = i switch
+			{
+				0 => new InputEventJoypadMotion  { Axis = JoyAxis.TriggerLeft,  AxisValue =  1f }, // L2
+				1 => new InputEventJoypadButton  { ButtonIndex = JoyButton.LeftShoulder },          // L1
+				2 => new InputEventJoypadButton  { ButtonIndex = JoyButton.RightShoulder },         // R1
+				3 => new InputEventJoypadMotion  { Axis = JoyAxis.TriggerRight, AxisValue =  1f }, // R2
+				_ => new InputEventJoypadButton  { ButtonIndex = JoyButton.Y },                    // X físico (Switch) = JoyButton.Y no Godot
+			};
+			if (!InputMap.ActionHasEvent(action, evJoy))
+			{
+				InputMap.ActionAddEvent(action, evJoy);
+				GD.Print($"[GameManager] InputMap: '{action}' → gamepad {evJoy}");
 			}
 		}
+
+		// Start / Menu / + → pause (adiciona ao ui_cancel existente)
+		const string pauseAction = "ui_cancel";
+		if (!InputMap.HasAction(pauseAction))
+			InputMap.AddAction(pauseAction);
+
+		var evStart = new InputEventJoypadButton { ButtonIndex = JoyButton.Start };
+		if (!InputMap.ActionHasEvent(pauseAction, evStart))
+			InputMap.ActionAddEvent(pauseAction, evStart);
 	}
 
 	// ── Pause ──────────────────────────────────────────────────────────────
