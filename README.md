@@ -1,4 +1,4 @@
-# Guitar Hero 3D — Godot 4 + C#
+# Guitar Metal — Godot 4 + C#
 
 Jogo de ritmo estilo Guitar Hero construído do zero com Godot 4.6 e C#. Suporta charts no formato Clone Hero (`.chart`), hold notes, seleção de dificuldade, controle gamepad e teclado simultâneos.
 
@@ -23,6 +23,7 @@ res://
 │   ├── Note.cs              ← Física e visual da nota (tap e hold)
 │   ├── SongChart.cs         ← Estrutura de dados + geração procedural
 │   ├── ChartImporter.cs     ← Parser de arquivos .chart (Clone Hero)
+│   ├── SongIniReader.cs     ← Leitor de song.ini (nome, artista, delay)
 │   ├── GameData.cs          ← Dados estáticos entre cenas
 │   ├── LoadingScreen.cs     ← State machine de carregamento
 │   ├── SongSelectMenu.cs    ← Seleção de música (scan da pasta Audio/)
@@ -74,19 +75,19 @@ MainMenu → SongSelect → [DifficultySelect] → Loading → Game → Results
 | X (topo)    | 4    | Laranja  |
 | Start / +   | —    | Pause    |
 
-Teclado e gamepad funcionam simultaneamente.
+Teclado e gamepad funcionam simultaneamente. Navegação de menus pelo D-pad + A (confirmar) / B (voltar).
 
 ---
 
 ## Pontuação
 
-| Timing  | Janela   | Pontos base |
-|---------|----------|-------------|
-| PERFECT | < 0.48u  | 100         |
-| GREAT   | < 1.20u  | 75          |
-| GOOD    | >= 1.20u | 50          |
-| HOLD    | completo | 150         |
-| MISS    | —        | 0 + reset combo |
+| Timing  | Janela  | Tempo  | Pontos base |
+|---------|---------|--------|-------------|
+| PERFECT | < 0.90u | < 25ms | 100         |
+| GREAT   | < 2.16u | < 60ms | 75          |
+| GOOD    | < 3.24u | < 90ms | 50          |
+| HOLD    | completo | —     | 150         |
+| MISS    | —       | —      | 0 + reset combo |
 
 **Multiplicadores:**
 
@@ -101,23 +102,64 @@ Teclado e gamepad funcionam simultaneamente.
 
 ---
 
-## Adicionando Musicas
+## Sincronização
 
-1. Coloque o arquivo de audio (`.ogg` recomendado) na pasta `Audio/`
-2. Coloque o `.chart` correspondente na mesma pasta com o mesmo nome base
-3. Abra o jogo — a musica aparece automaticamente no menu de selecao
+As notas são posicionadas diretamente pelo clock do áudio (`GameData.SongTime`), não por acúmulo de delta por frame. Isso garante sincronização perfeita independente de variações de frame rate.
 
-### Formato `.chart` suportado
-
-Compativel com o formato Clone Hero. Dificuldades suportadas:
-`ExpertSingle`, `HardSingle`, `MediumSingle`, `EasySingle`
-
-### Fallback: chart procedural
-
-Se nao houver `.chart`, o jogo gera um chart automatico baseado no BPM e duracao do audio.
+O campo `AudioLatencyOffset` (Export no GameManager) permite compensação manual de latência se necessário.
 
 ---
 
-## Licenca
+## Adicionando Músicas
+
+### Formato Clone Hero / Enchor (recomendado)
+
+Crie uma subpasta em `Audio/` com a estrutura:
+
+```
+Audio/
+└── Metallica - Master of Puppets/
+    ├── notes.chart    ← chart de notas
+    ├── song.ini       ← metadados (nome, artista, delay)
+    └── song.ogg       ← áudio da música
+```
+
+O jogo lê `song.ini` para exibir "Artista - Título" na lista de seleção.
+
+### Formato solto (arquivo único)
+
+Coloque o áudio e o `.chart` na pasta `Audio/` com o mesmo nome base:
+
+```
+Audio/
+├── MinhaMusica.ogg
+└── MinhaMusica.chart
+```
+
+### Formatos de áudio suportados
+
+| Formato | Suportado |
+|---------|-----------|
+| `.ogg`  | ✅ Recomendado |
+| `.mp3`  | ✅ |
+| `.wav`  | ✅ |
+| `.opus` | ❌ Não suportado pelo Godot 4 |
+
+> **Dica:** Converta `.opus` para `.ogg` com `ffmpeg -i song.opus song.ogg`
+
+### Formato `.chart` suportado
+
+Compatível com o formato Clone Hero. Dificuldades suportadas:
+`ExpertSingle`, `HardSingle`, `MediumSingle`, `EasySingle`
+
+Suporta mudanças de BPM (múltiplos eventos `B` no `[SyncTrack]`).
+
+### Fallback: chart procedural
+
+Se não houver `.chart`, o jogo gera um chart automático baseado no BPM e duração do áudio.
+
+---
+
+## Licença
 
 MIT
