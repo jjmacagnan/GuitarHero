@@ -19,6 +19,14 @@ public static class GameData
     /// <summary>Tempo que uma nota leva do spawn até a hitline com a velocidade ativa.</summary>
     public static float TravelTime         => NoteSpawnDistance / NoteSpeed;
 
+    // ── Tempo da música (atualizado pelo GameManager a cada frame) ─────────
+    /// <summary>
+    /// Tempo atual da música em segundos (referência do áudio).
+    /// As notas usam este valor para calcular sua posição Z,
+    /// garantindo sincronização perfeita com o áudio.
+    /// </summary>
+    public static double SongTime { get; set; }
+
     // ── Seleção de música ──────────────────────────────────────────────────
     public static string      SelectedSongPath { get; set; } = "";
     public static string      SelectedSongName { get; set; } = "";

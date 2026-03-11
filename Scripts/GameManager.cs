@@ -10,6 +10,12 @@ public partial class GameManager : Node3D
 {
 	[Export] public float NoteSpeed { get; set; } = GameData.DefaultNoteSpeed;
 	[Export] public float BPM       { get; set; } = 128f;
+	/// <summary>
+	/// Compensação manual de latência de áudio em segundos.
+	/// Ajuste se as notas aparecerem muito cedo (valor positivo) ou tarde (valor negativo).
+	/// Padrão: 0 (usa GetOutputLatency automático).
+	/// </summary>
+	[Export] public float AudioLatencyOffset { get; set; } = 0f;
 
 	// Notas surgem em Z=-NoteSpawnDistance e se movem em +Z até a hitline em Z=0
 	private const float SpawnZ    = -GameData.NoteSpawnDistance;
@@ -155,9 +161,10 @@ public partial class GameManager : Node3D
 		//
 		//    AudioDelay: buffer mínimo antes do Play() para evitar clique de início.
 		//    outputLatency: latência real do driver de áudio (compensa o buffer de saída).
-		double outputLatency = AudioServer.GetOutputLatency();
+		double outputLatency = AudioServer.GetOutputLatency() + AudioLatencyOffset;
 		const double AudioDelay = 0.3;
 		_songTime = -TravelTime - AudioDelay;
+		GameData.SongTime = _songTime;
 
 		// 5. Toca música com delay sincronizado com _songTime
 		if (_audio?.Stream != null)
@@ -165,7 +172,7 @@ public partial class GameManager : Node3D
 			double delay = TravelTime + AudioDelay;
 			var t = GetTree().CreateTimer(delay);
 			t.Timeout += () => { _audio.Play(); };
-			GD.Print($"[GameManager] Música em {delay:F2}s | TravelTime={TravelTime:F2}s | Latência={outputLatency*1000:F0}ms");
+			GD.Print($"[GameManager] Música em {delay:F2}s | TravelTime={TravelTime:F2}s | Latência={outputLatency*1000:F1}ms (offset={AudioLatencyOffset*1000:F1}ms)");
 		}
 
 		InitParticlePool();
@@ -324,9 +331,13 @@ public partial class GameManager : Node3D
 		// GetPlaybackPosition() retorna a posição no stream (não o que o jogador ouve).
 		// Subtrair outputLatency faz _songTime bater com o áudio percebido.
 		if (_audio != null && _audio.Playing)
-			_songTime = _audio.GetPlaybackPosition() - AudioServer.GetOutputLatency();
+			_songTime = _audio.GetPlaybackPosition() - (AudioServer.GetOutputLatency() + AudioLatencyOffset);
 		else
 			_songTime += delta;
+
+		// Publica o tempo para que as notas calculem sua posição Z
+		// diretamente a partir do clock do áudio (sem acúmulo de delta).
+		GameData.SongTime = _songTime;
 
 		SpawnNotes();
 		UpdateHUD();
@@ -388,9 +399,10 @@ public partial class GameManager : Node3D
 		string label;
 		Color  color;
 
-		// PERFECT <25ms | GREAT <60ms | GOOD <90ms  (a Speed=12u/s)
-		if      (dist < 0.30f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
-		else if (dist < 0.72f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
+		// PERFECT <25ms | GREAT <60ms | GOOD <90ms  (a NoteSpeed=36)
+		// 25ms × 36 = 0.90u | 60ms × 36 = 2.16u | 90ms × 36 = 3.24u (HitWindow)
+		if      (dist < 0.90f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
+		else if (dist < 2.16f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
 		else                   { baseScore =  50; label = "GOOD";     color = Colors.White;  }
 
 		_score += baseScore * _multiplier;

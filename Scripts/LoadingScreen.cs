@@ -175,8 +175,25 @@ public partial class LoadingScreen : Control
 		if (imported.Notes.Count > 0)
 		{
 			_chartNotes = new List<NoteData>();
-			foreach (var nd in imported.Notes) _chartNotes.Add(nd);
-			GD.Print($"[Loading] .chart carregado: {_chartNotes.Count} notas, BPM={_bpm}, offset={_startOffset:F3}s");
+			
+			// Ajusta o tempo de cada nota se houver diferença entre o offset do chart e o calculado
+			float chartOffset = imported.StartOffset;
+			float offsetDifference = _startOffset - chartOffset;
+			
+			foreach (var nd in imported.Notes)
+			{
+				// Cria uma cópia e reaplica o offset correto
+				var adjusted = new NoteData
+				{
+					Time = nd.Time + offsetDifference,
+					Lane = nd.Lane,
+					IsLong = nd.IsLong,
+					Duration = nd.Duration
+				};
+				_chartNotes.Add(adjusted);
+			}
+			
+			GD.Print($"[Loading] .chart carregado: {_chartNotes.Count} notas, BPM={_bpm}, offset={_startOffset:F3}s (chart offset={chartOffset:F3}s, diff={offsetDifference:F3}s)");
 		}
 		return true;
 	}

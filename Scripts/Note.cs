@@ -17,8 +17,9 @@ public partial class Note : Node3D
 
     // Hitline em Z=0, notas vêm de Z negativo em direção a Z=0
     public const float HitLineZ  = 0f;
-    public const float HitWindow = 1.08f;  // 90ms a Speed=12
-    private const float MissZ    = 1.13f;  // HitWindow + 0.05 → sem zona morta
+    // Janela calculada para NoteSpeed=36:  90ms × 36 = 3.24 unidades
+    public const float HitWindow = 3.24f;
+    private const float MissZ    = 3.30f;  // HitWindow + margem → sem zona morta
 
     private MeshInstance3D     _headMesh;
     private MeshInstance3D     _tailMesh;
@@ -82,8 +83,12 @@ public partial class Note : Node3D
 
         if (WasHit || Missed) return;
 
-        // Move ao longo do eixo Z em direção à hitline (Z=0)
-        Position += new Vector3(0f, 0f, Speed * (float)delta);
+        // Posição Z calculada diretamente a partir do tempo da música.
+        // Garante que a nota esteja SEMPRE sincronizada com o áudio,
+        // independente de variações de frame rate.
+        // Quando songTime == BeatTime → Z = 0 (hitline).
+        float idealZ = -(float)(BeatTime - GameData.SongTime) * Speed;
+        Position = new Vector3(Position.X, Position.Y, idealZ);
 
         if (Position.Z > MissZ)
         {
