@@ -7,3 +7,13 @@
 
 # Claude Code
 .claude/
+
+# Áudio e charts (assets pesados, não versionados)
+Audio/*.ogg
+Audio/*.mp3
+Audio/*.wav
+Audio/*.ogg.import
+Audio/*.mp3.import
+Audio/*.wav.import
+Audio/*.chart
+Audio/*.json
