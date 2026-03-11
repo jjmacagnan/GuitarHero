@@ -132,14 +132,41 @@ public partial class LoadingScreen : Control
 
 	private void ReadChartMetadata()
 	{
-		// Constrói caminho do JSON: troca extensão do áudio por .json
 		string audioPath = GameData.SelectedSongPath;
 		int lastDot = audioPath.LastIndexOf('.');
-		string jsonPath = (lastDot >= 0 ? audioPath[..lastDot] : audioPath) + ".json";
+		string basePath  = lastDot >= 0 ? audioPath[..lastDot] : audioPath;
 
+		// Prioridade: .chart (Clone Hero) → .json → procedural
+		if (TryLoadDotChart(basePath + ".chart")) return;
+		TryLoadJson(basePath + ".json");
+	}
+
+	private bool TryLoadDotChart(string chartPath)
+	{
+		if (!FileAccess.FileExists(chartPath)) return false;
+
+		var imported = ChartImporter.Import(chartPath);
+		if (imported == null) return false;
+
+		_bpm         = imported.BPM;
+		_startOffset = imported.StartOffset;
+		if (!string.IsNullOrEmpty(imported.SongName))
+			GameData.SelectedSongName = imported.SongName;
+
+		if (imported.Notes.Count > 0)
+		{
+			_chartNotes = new List<NoteData>();
+			foreach (var nd in imported.Notes) _chartNotes.Add(nd);
+			GD.Print($"[Loading] .chart carregado: {_chartNotes.Count} notas, BPM={_bpm}");
+		}
+		return true;
+	}
+
+	private void TryLoadJson(string jsonPath)
+	{
 		if (!FileAccess.FileExists(jsonPath))
 		{
-			GD.Print($"[Loading] Sem JSON para '{jsonPath}' — usando defaults");
+			GD.Print($"[Loading] Sem chart para '{jsonPath}' — usando procedural");
 			return;
 		}
 
@@ -156,7 +183,6 @@ public partial class LoadingScreen : Control
 			if (root.TryGetProperty("songName",    out var sn) && !string.IsNullOrEmpty(sn.GetString()))
 				GameData.SelectedSongName = sn.GetString();
 
-			// Carrega notas explícitas se existirem
 			if (root.TryGetProperty("notes", out var notesEl) && notesEl.GetArrayLength() > 0)
 			{
 				_chartNotes = new List<NoteData>();

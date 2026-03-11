@@ -52,7 +52,7 @@ public partial class GameManager : Node3D
 	};
 
 	private static readonly Key[] LaneKeys =
-		{ Key.A, Key.S, Key.D, Key.F, Key.Space };
+		{ Key.A, Key.S, Key.J, Key.K, Key.L };
 
 	// Nomes das ações no InputMap (podem ser reconfigurados em Project → Input Map)
 	public static readonly string[] LaneActions =
@@ -180,7 +180,13 @@ public partial class GameManager : Node3D
 	{
 		if (_songEnded) return;
 
-		_songTime += delta;
+		// Ancora _songTime ao clock real do áudio quando está tocando.
+		// Evita drift acumulado por variações de framerate.
+		if (_audio != null && _audio.Playing)
+			_songTime = _audio.GetPlaybackPosition();
+		else
+			_songTime += delta;
+
 		SpawnNotes();
 		UpdateHUD();
 	}
@@ -230,9 +236,10 @@ public partial class GameManager : Node3D
 		string label;
 		Color  color;
 
-		if      (dist < 0.4f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
-		else if (dist < 1.0f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
-		else                  { baseScore =  50; label = "GOOD";     color = Colors.White;  }
+		// Thresholds com 20% de margem antes e depois da hitline
+		if      (dist < 0.48f) { baseScore = 100; label = "PERFECT!"; color = Colors.Cyan;   }
+		else if (dist < 1.20f) { baseScore =  75; label = "GREAT";    color = Colors.Yellow; }
+		else                   { baseScore =  50; label = "GOOD";     color = Colors.White;  }
 
 		_score += baseScore * _multiplier;
 		GameData.NotesHit++;
