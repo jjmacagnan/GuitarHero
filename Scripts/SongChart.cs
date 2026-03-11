@@ -105,7 +105,7 @@ public partial class SongChart : Resource
 					if (n.TryGetProperty("time",     out var t))  nd.Time     = t.GetDouble();
 					if (n.TryGetProperty("lane",     out var l))  nd.Lane     = l.GetInt32();
 					if (n.TryGetProperty("isLong",   out var il)) nd.IsLong   = il.GetBoolean();
-					if (n.TryGetProperty("duration", out var d))  nd.Duration = d.GetDouble();
+					if (n.TryGetProperty("duration", out var d))  nd.Duration = d.GetSingle();
 					chart.Notes.Add(nd);
 				}
 			}
@@ -132,5 +132,5 @@ public partial class NoteData : Resource
 	[Export] public double Time     { get; set; } = 0;
 	[Export] public int    Lane     { get; set; } = 0;
 	[Export] public bool   IsLong   { get; set; } = false;
-	[Export] public double Duration { get; set; } = 0;
+	[Export] public float  Duration { get; set; } = 0f;
 }

@@ -192,7 +192,7 @@ public partial class LoadingScreen : Control
 					if (n.TryGetProperty("time",     out var t))  nd.Time     = t.GetDouble();
 					if (n.TryGetProperty("lane",     out var l))  nd.Lane     = l.GetInt32();
 					if (n.TryGetProperty("isLong",   out var il)) nd.IsLong   = il.GetBoolean();
-					if (n.TryGetProperty("duration", out var d))  nd.Duration = d.GetDouble();
+					if (n.TryGetProperty("duration", out var d))  nd.Duration = d.GetSingle();
 					_chartNotes.Add(nd);
 				}
 				_chartNotes.Sort((a, b) => a.Time.CompareTo(b.Time));

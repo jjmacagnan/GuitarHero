@@ -73,6 +73,10 @@ public partial class GameManager : Node3D
 	{
 		GD.Print("[GameManager] Iniciando...");
 
+		// Publica a velocidade ativa para que GameData.TravelTime seja consistente
+		// com qualquer valor exportado via Inspector (fonte única da verdade).
+		GameData.NoteSpeed = NoteSpeed;
+
 		SetupInputMap();
 		_audio         = GetNodeOrNull<AudioStreamPlayer>("AudioPlayer");
 		_scoreLabel    = GetNodeOrNull<Label>("HUD/ScoreLabel");
@@ -362,7 +366,7 @@ public partial class GameManager : Node3D
 			Speed    = NoteSpeed,
 			BeatTime = data.Time,
 			IsLong   = data.IsLong,
-			Duration = (float)data.Duration,
+			Duration = data.Duration,
 			Position = new Vector3(LaneX[data.Lane], 0f, SpawnZ)
 		};
 
