@@ -46,6 +46,7 @@ public partial class GameManager : Node3D
 	private Button  _pauseResumeButton;
 
 	private double        _songTime;
+	private double        _lastRawAudioTime = double.NaN; // último valor de GetPlaybackPosition - latência
 	private int           _nextNoteIndex;
 	private List<NoteData> _noteList;
 	private int           _totalNotes;
@@ -327,13 +328,24 @@ public partial class GameManager : Node3D
 	{
 		if (_songEnded || _paused) return;
 
-		// Ancora _songTime ao clock real do áudio compensando a latência de saída.
-		// GetPlaybackPosition() retorna a posição no stream (não o que o jogador ouve).
-		// Subtrair outputLatency faz _songTime bater com o áudio percebido.
+		// Avança _songTime por delta a cada frame (suave, sem saltos).
+		// Corrige gradualmente em direção ao tempo real do áudio para evitar deriva.
+		// Se a diferença for > 100ms, faz snap imediato.
+		_songTime += delta;
 		if (_audio != null && _audio.Playing)
-			_songTime = _audio.GetPlaybackPosition() - (AudioServer.GetOutputLatency() + AudioLatencyOffset);
-		else
-			_songTime += delta;
+		{
+			double rawTime = _audio.GetPlaybackPosition() - (AudioServer.GetOutputLatency() + AudioLatencyOffset);
+			// Ignora leituras idênticas consecutivas (buffer de áudio ainda não atualizou)
+			if (rawTime != _lastRawAudioTime)
+			{
+				_lastRawAudioTime = rawTime;
+				double drift = rawTime - _songTime;
+				if (Math.Abs(drift) > 0.1)
+					_songTime = rawTime;                   // drift grande → snap
+				else
+					_songTime += drift * Math.Min(1.0, delta * 8.0); // correção suave
+			}
+		}
 
 		// Publica o tempo para que as notas calculem sua posição Z
 		// diretamente a partir do clock do áudio (sem acúmulo de delta).
@@ -390,6 +402,7 @@ public partial class GameManager : Node3D
 	// ── Eventos de acerto ──────────────────────────────────────────────────
 	private void OnNoteHit(int lane, Note note)
 	{
+		if (_songEnded) return;
 		_combo++;
 		_multiplier = _combo switch { >= 30 => 8, >= 20 => 4, >= 10 => 2, _ => 1 };
 
@@ -418,6 +431,7 @@ public partial class GameManager : Node3D
 
 	private void OnHoldComplete(int lane, Note note)
 	{
+		if (_songEnded) return;
 		_combo++;
 		_multiplier = _combo switch { >= 30 => 8, >= 20 => 4, >= 10 => 2, _ => 1 };
 		_score += 150 * _multiplier;
@@ -496,6 +510,7 @@ public partial class GameManager : Node3D
 
 	private void OnNoteMiss(int lane)
 	{
+		if (_songEnded) return;
 		_combo      = 0;
 		_multiplier = 1;
 		GameData.NotesMissed++;

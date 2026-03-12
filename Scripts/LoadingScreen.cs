@@ -12,7 +12,7 @@ public partial class LoadingScreen : Control
 	private Label       _statusLabel;
 	private ProgressBar _progressBar;
 
-	private enum State { Init, LoadAudio, ReadMetadata, GenerateChart, Ready }
+	private enum State { Init, LoadAudio, ReadMetadata, GenerateChart, Ready, Error }
 	private State _state = State.Init;
 
 	// Metadados lidos do JSON (ou defaults)
@@ -36,6 +36,16 @@ public partial class LoadingScreen : Control
 		SetStatus("Inicializando...", 5);
 	}
 
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		// Permite voltar para a seleção de música em caso de erro (ou a qualquer momento)
+		if (_state == State.Error && @event.IsActionPressed("ui_cancel"))
+		{
+			GetTree().ChangeSceneToFile("res://Scenes/SongSelect.tscn");
+			GetViewport().SetInputAsHandled();
+		}
+	}
+
 	public override void _Process(double delta)
 	{
 		switch (_state)
@@ -51,24 +61,23 @@ public partial class LoadingScreen : Control
 				bool fileExists  = FileAccess.FileExists(audioPath);
 				bool hasImport   = FileAccess.FileExists(audioPath + ".import");
 
-				if (!fileExists)
-				{
-					GD.PushError($"[Loading] Arquivo de áudio não existe: {audioPath}");
-				}
-				else if (!hasImport)
-				{
-					GD.PushWarning($"[Loading] Áudio existe mas não foi importado pelo Godot (falta .import): {audioPath}");
-					GD.PushWarning("[Loading] Abra o editor Godot para que o arquivo seja importado automaticamente.");
-				}
-
 				var stream = GD.Load<AudioStream>(audioPath);
 				GameData.LoadedStream = stream;
 
-				if (stream == null && fileExists)
-					GD.PushError($"[Loading] Falha ao carregar áudio (formato não suportado? .opus não é aceito — use .ogg/.mp3/.wav): {audioPath}");
-				else if (stream != null)
-					GD.Print($"[Loading] Áudio carregado: {audioPath} ({stream.GetLength():F1}s)");
+				if (stream == null)
+				{
+					string reason = !fileExists
+						? "arquivo não encontrado"
+						: !hasImport
+							? "não importado (abra o editor Godot para importar)"
+							: "formato não suportado (.opus não é aceito — use .ogg/.mp3/.wav)";
+					GD.PushError($"[Loading] Falha ao carregar áudio ({reason}): {audioPath}");
+					SetStatus($"Erro: {reason}\n[ESC para voltar]", 0);
+					_state = State.Error;
+					break;
+				}
 
+				GD.Print($"[Loading] Áudio carregado: {audioPath} ({stream.GetLength():F1}s)");
 				SetStatus("Lendo metadados da música...", 30);
 				_state = State.ReadMetadata;
 				break;
@@ -139,6 +148,7 @@ public partial class LoadingScreen : Control
 				break;
 
 			case State.Ready:
+			case State.Error:
 				SetProcess(false);
 				break;
 		}
@@ -180,10 +190,8 @@ public partial class LoadingScreen : Control
 
 		_bpm = imported.BPM;
 
-		// Offset: usa o do .chart se não-zero; caso contrário aplica delay do song.ini
-		_startOffset = imported.StartOffset != 0f
-			? imported.StartOffset
-			: iniDelayMs / 1000f;
+		// Offset: combina o offset do .chart com o delay do song.ini (ambos podem ser não-zero)
+		_startOffset = imported.StartOffset + iniDelayMs / 1000f;
 
 		if (!string.IsNullOrEmpty(imported.SongName))
 			GameData.SelectedSongName = imported.SongName;
@@ -191,24 +199,22 @@ public partial class LoadingScreen : Control
 		if (imported.Notes.Count > 0)
 		{
 			_chartNotes = new List<NoteData>();
-			
+
 			// Ajusta o tempo de cada nota se houver diferença entre o offset do chart e o calculado
-			float chartOffset = imported.StartOffset;
+			float chartOffset      = imported.StartOffset;
 			float offsetDifference = _startOffset - chartOffset;
-			
+
 			foreach (var nd in imported.Notes)
 			{
-				// Cria uma cópia e reaplica o offset correto
-				var adjusted = new NoteData
+				_chartNotes.Add(new NoteData
 				{
-					Time = nd.Time + offsetDifference,
-					Lane = nd.Lane,
-					IsLong = nd.IsLong,
+					Time     = nd.Time + offsetDifference,
+					Lane     = nd.Lane,
+					IsLong   = nd.IsLong,
 					Duration = nd.Duration
-				};
-				_chartNotes.Add(adjusted);
+				});
 			}
-			
+
 			GD.Print($"[Loading] .chart carregado: {_chartNotes.Count} notas, BPM={_bpm}, offset={_startOffset:F3}s (chart offset={chartOffset:F3}s, diff={offsetDifference:F3}s)");
 		}
 		return true;

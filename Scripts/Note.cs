@@ -167,6 +167,9 @@ public partial class Note : Node3D
         {
             _isBeingHeld = true;
             if (_headMesh != null) _headMesh.Visible = false;
+            // Snap para a hitline para que a cauda visual fique alinhada corretamente.
+            // Sem isso, se a nota for acertada fora de Z=0 a cauda fica deslocada.
+            Position = new Vector3(Position.X, Position.Y, HitLineZ);
         }
     }
 

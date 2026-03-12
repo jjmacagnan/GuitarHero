@@ -131,15 +131,15 @@ public static class ChartImporter
 
 	private static void ParseBpmLine(string line, SortedDictionary<long, float> bpmMap)
 	{
-		// Formato: tick = BPM millivalue   ex: 0 = BPM 120000
+		// Formato: tick = B millivalue   ex: 0 = B 120000
 		int eq = line.IndexOf('=');
 		if (eq < 0) return;
 		if (!long.TryParse(line[..eq].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out long tick)) return;
 
 		string rest = line[(eq + 1)..].Trim();
-		if (!rest.StartsWith("BPM ")) return;
+		if (!rest.StartsWith("B ")) return;
 
-		if (float.TryParse(rest[4..].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float milliVal))
+		if (float.TryParse(rest[2..].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float milliVal))
 			bpmMap[tick] = milliVal / 1000f;
 	}
 

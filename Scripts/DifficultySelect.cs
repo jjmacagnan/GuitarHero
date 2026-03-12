@@ -50,8 +50,25 @@ public partial class DifficultySelect : Control
 			firstBtn ??= btn;
 		}
 
+		if (firstBtn == null)
+		{
+			// Nenhuma dificuldade reconhecida — informa o jogador e volta em 2s
+			GD.PushWarning("[DifficultySelect] Nenhuma dificuldade disponível.");
+			var msg = new Label
+			{
+				Text                = "Nenhuma dificuldade encontrada neste chart.",
+				HorizontalAlignment = HorizontalAlignment.Center,
+			};
+			msg.AddThemeColorOverride("font_color", Colors.OrangeRed);
+			grid.AddChild(msg);
+
+			var timer = GetTree().CreateTimer(2.0f);
+			timer.Timeout += () => GetTree().ChangeSceneToFile("res://Scenes/SongSelect.tscn");
+			return;
+		}
+
 		// Foca a primeira dificuldade disponível
-		firstBtn?.CallDeferred(Control.MethodName.GrabFocus);
+		firstBtn.CallDeferred(Control.MethodName.GrabFocus);
 
 		// Botão Voltar
 		GetNodeOrNull<Button>("VBox/BackButton")
