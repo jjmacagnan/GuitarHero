@@ -21,6 +21,9 @@ public partial class Lane : Node3D
 	private MeshInstance3D     _hitZoneMesh;
 	private StandardMaterial3D _hitZoneMat;
 
+	// ── SFX ────────────────────────────────────────────────────────────
+	private AudioStreamPlayer _missSfx;
+
 	// ── Notas ──────────────────────────────────────────────────────────────
 	private readonly List<Note> _activeNotes     = new();
 	private readonly List<Note> _noteSnapshot    = new();  // cópia reutilizável para iteração segura
@@ -113,6 +116,16 @@ public partial class Lane : Node3D
 			AddChild(_hitZoneMesh);
 		}
 		else { _hitZoneMat = _hitZoneMesh.MaterialOverride as StandardMaterial3D; }
+
+		// 5. SFX de miss (tecla sem nota)
+		_missSfx = new AudioStreamPlayer { Name = "MissSfx" };
+		var sfxStream = GD.Load<AudioStream>("res://SFX/Caixa 1.mp3");
+		if (sfxStream != null)
+		{
+			_missSfx.Stream = sfxStream;
+			_missSfx.VolumeDb = -6f;
+		}
+		AddChild(_missSfx);
 
 		ApplyColor();
 	}
@@ -212,6 +225,11 @@ public partial class Lane : Node3D
 			closest.Hit();
 			// Emite para tap E hold — GameManager dá feedback visual (PERFECT/GREAT/GOOD)
 			EmitSignal(SignalName.NoteHitInLane, LaneIndex, closest);
+		}
+		else
+		{
+			// Tecla pressionada sem nota na janela de acerto → toca SFX de erro
+			if (GameData.MissSfxEnabled && _missSfx?.Stream != null) _missSfx.Play();
 		}
 	}
 
