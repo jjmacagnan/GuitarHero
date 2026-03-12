@@ -26,8 +26,9 @@ public partial class Note : Node3D
     private StandardMaterial3D _tailMat;
     private float              _tailLen;
     private float              _originalZ;        // Z inicial (spawn)
-    private float _holdTimer   = 0f;
-    private bool  _isBeingHeld = false;
+    private float _holdTimer    = 0f;
+    private bool  _isBeingHeld  = false;
+    private bool  _holdResolved = false;  // guard contra emissão dupla de sinais
 
     [Signal] public delegate void NoteHitEventHandler(Note note);
     [Signal] public delegate void NoteMissedEventHandler(Note note);
@@ -100,9 +101,12 @@ public partial class Note : Node3D
 
     private void ProcessHold(float delta)
     {
+        if (_holdResolved) return;
+
         if (!_isBeingHeld)
         {
             // Tecla solta antes do fim — miss
+            _holdResolved = true;
             Missed = true;
             EmitSignal(SignalName.NoteMissed, this);
             QueueFree();
@@ -124,6 +128,7 @@ public partial class Note : Node3D
 
         if (_holdTimer >= Duration)
         {
+            _holdResolved = true;
             EmitSignal(SignalName.HoldComplete, this);
             QueueFree();
         }
