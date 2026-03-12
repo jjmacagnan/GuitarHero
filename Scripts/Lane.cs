@@ -194,7 +194,7 @@ public partial class Lane : Node3D
 		_noteSnapshot.AddRange(_activeNotes);
 		foreach (var n in _noteSnapshot)
 		{
-			if (!IsInstanceValid(n) || !n.IsInHitWindow()) continue;
+			if (!IsInstanceValid(n) || n.WasHit || n.Missed || !n.IsInHitWindow()) continue;
 			float d = Mathf.Abs(n.GlobalPosition.Z - Note.HitLineZ);
 			if (d < closestDist) { closestDist = d; closest = n; }
 		}
@@ -304,17 +304,16 @@ public partial class Lane : Node3D
 	private void ShowReleasePenalty()
 	{
 		if (_hitZoneMat == null) return;
-		var originalMat = _hitZoneMat.EmissionEnergyMultiplier;
+		var originalEnergy = _hitZoneMat.EmissionEnergyMultiplier;
 		_hitZoneMat.Emission = Colors.Red * 2f;
 		_hitZoneMat.EmissionEnergyMultiplier = 8f;
 		var t = GetTree().CreateTimer(0.15f);
 		t.Timeout += () =>
 		{
-			if (_hitZoneMat != null)
-			{
-				_hitZoneMat.Emission = LaneColor * 2.5f;
-				_hitZoneMat.EmissionEnergyMultiplier = originalMat;
-			}
+			// Guard: verifica se o Lane ainda existe na árvore antes de acessar o material
+			if (!IsInstanceValid(this) || _hitZoneMat == null) return;
+			_hitZoneMat.Emission = LaneColor * 2.5f;
+			_hitZoneMat.EmissionEnergyMultiplier = originalEnergy;
 		};
 	}
 }

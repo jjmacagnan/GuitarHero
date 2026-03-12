@@ -46,7 +46,7 @@ public partial class GameManager : Node3D
 	private Button  _pauseResumeButton;
 
 	private double        _songTime;
-	private double        _lastRawAudioTime = double.NaN; // último valor de GetPlaybackPosition - latência
+	private double        _lastRawAudioTime = -1.0; // último valor de GetPlaybackPosition - latência (-1 = não inicializado)
 	private int           _nextNoteIndex;
 	private List<NoteData> _noteList;
 	private int           _totalNotes;
@@ -164,13 +164,13 @@ public partial class GameManager : Node3D
 		//    outputLatency: latência real do driver de áudio (compensa o buffer de saída).
 		double outputLatency = AudioServer.GetOutputLatency() + AudioLatencyOffset;
 		const double AudioDelay = 0.3;
-		_songTime = -TravelTime - AudioDelay;
+		_songTime = -TravelTime - AudioDelay - outputLatency;
 		GameData.SongTime = _songTime;
 
 		// 5. Toca música com delay sincronizado com _songTime
 		if (_audio?.Stream != null)
 		{
-			double delay = TravelTime + AudioDelay;
+			double delay = TravelTime + AudioDelay + outputLatency;
 			var t = GetTree().CreateTimer(delay);
 			t.Timeout += () => { _audio.Play(); };
 			GD.Print($"[GameManager] Música em {delay:F2}s | TravelTime={TravelTime:F2}s | Latência={outputLatency*1000:F1}ms (offset={AudioLatencyOffset*1000:F1}ms)");
@@ -336,14 +336,14 @@ public partial class GameManager : Node3D
 		{
 			double rawTime = _audio.GetPlaybackPosition() - (AudioServer.GetOutputLatency() + AudioLatencyOffset);
 			// Ignora leituras idênticas consecutivas (buffer de áudio ainda não atualizou)
-			if (rawTime != _lastRawAudioTime)
+			if (Math.Abs(rawTime - _lastRawAudioTime) > 0.0001)
 			{
 				_lastRawAudioTime = rawTime;
 				double drift = rawTime - _songTime;
-				if (Math.Abs(drift) > 0.1)
-					_songTime = rawTime;                   // drift grande → snap
+				if (Math.Abs(drift) > 0.05)
+					_songTime = rawTime;                   // drift > 50ms → snap
 				else
-					_songTime += drift * Math.Min(1.0, delta * 8.0); // correção suave
+					_songTime += drift * Math.Min(1.0, delta * 4.0); // correção suave (mais lenta para evitar saltos)
 			}
 		}
 
@@ -436,7 +436,8 @@ public partial class GameManager : Node3D
 		_multiplier = _combo switch { >= 30 => 8, >= 20 => 4, >= 10 => 2, _ => 1 };
 		_score += 150 * _multiplier;
 
-		GameData.NotesHit++;
+		// NotesHit NÃO é incrementado aqui — já foi contado no OnNoteHit (tap).
+		// Incrementar novamente faria accuracy > 100%.
 		GameData.HoldsComplete++;
 		_resolvedNotes++;
 
