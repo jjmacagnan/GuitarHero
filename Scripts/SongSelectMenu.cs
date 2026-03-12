@@ -17,6 +17,7 @@ public partial class SongSelectMenu : Control
 {
     private VBoxContainer _songList;
     private Label         _previewLabel;
+    private CheckBox      _missSfxCheck;
 
     // Extensões de áudio reconhecidas (em ordem de prioridade dentro de uma pasta)
     // .opus NÃO está na lista — Godot 4 não suporta o formato Opus.
@@ -34,6 +35,13 @@ public partial class SongSelectMenu : Control
 
         GetNodeOrNull<Button>("VBox/BackButton")
             ?.Connect("pressed", Callable.From(() => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn")));
+
+        _missSfxCheck = GetNodeOrNull<CheckBox>("VBox/MissSfxCheck");
+        if (_missSfxCheck != null)
+        {
+            _missSfxCheck.ButtonPressed = GameData.MissSfxEnabled;
+            _missSfxCheck.Toggled += (on) => GameData.MissSfxEnabled = on;
+        }
 
         PopulateSongs();
     }
