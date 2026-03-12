@@ -33,6 +33,10 @@ public static class GameData
     public static AudioStream LoadedStream     { get; set; } = null;
     public static float       LoadedBPM        { get; set; } = 128f;
 
+    // ── Opções ──────────────────────────────────────────────────────────
+    /// <summary>Se true, toca SFX ao pressionar tecla sem nota na janela de acerto.</summary>
+    public static bool MissSfxEnabled { get; set; } = true;
+
     // ── Dificuldade ──────────────────────────────────────────────────────
     /// <summary>Track selecionada (ex: "ExpertSingle"). null = auto (maior disponível).</summary>
     public static string       SelectedDifficulty    { get; set; } = null;
