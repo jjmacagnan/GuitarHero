@@ -586,9 +586,22 @@ public partial class GameManager : Node3D
 		GameData.Score = _score;
 		GD.Print($"[GameManager] Fim! Score={_score}, Acc={GameData.Accuracy:F1}%, Grade={GameData.Grade}");
 
-		_audio?.Stop();
+		// Se o áudio ainda está tocando (ex: todas as notas resolvidas mas música continua),
+		// deixa terminar naturalmente e só então agenda a transição.
+		// Evita cortar a música abruptamente quando CheckSongEnd dispara antes do fim do áudio.
+		if (_audio != null && _audio.Playing)
+		{
+			_audio.Finished += ScheduleResultsTransition;
+		}
+		else
+		{
+			_audio?.Stop();
+			ScheduleResultsTransition();
+		}
+	}
 
-		// Aguarda 1s e vai para tela de resultados
+	private void ScheduleResultsTransition()
+	{
 		var t = GetTree().CreateTimer(1f);
 		t.Timeout += () => GetTree().ChangeSceneToFile("res://Scenes/Results.tscn");
 	}
