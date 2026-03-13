@@ -12,6 +12,8 @@ public partial class Leaderboard : Control
 	private Label         _scoreTitle;
 	private Label         _hintLabel;
 	private Button        _backButton;
+    private Button        _clearButton;
+    private string        _currentSongName = "";
 
 	// Reutiliza o scanner de músicas do SongSelectMenu
 	private static readonly string[] LooseAudioExtensions = { ".ogg", ".mp3", ".wav" };
@@ -36,6 +38,21 @@ public partial class Leaderboard : Control
 		if (_hintLabel != null) _hintLabel.Text = Locale.Tr("SELECT_SONG_LB");
 
 		PopulateSongs();
+
+		// Cria/obtém botão de limpar scores dentro do painel de scores
+		var scorePanel = GetNodeOrNull<Control>("VBox/HSplit/ScorePanel");
+		if (scorePanel != null)
+		{
+			_clearButton = scorePanel.GetNodeOrNull<Button>("ClearButton");
+			if (_clearButton == null)
+			{
+				_clearButton = new Button { Text = Locale.Tr("CLEAR_SCORES"), CustomMinimumSize = new Vector2(120, 36), FocusMode = Control.FocusModeEnum.All };
+				_clearButton.AddThemeFontSizeOverride("font_size", 14);
+				scorePanel.AddChild(_clearButton);
+			}
+			_clearButton.Pressed += () => ClearScoresForCurrentSong();
+			_clearButton.Disabled = true;
+		}
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -98,7 +115,9 @@ public partial class Leaderboard : Control
 		if (_scoreTitle != null) _scoreTitle.Text = songName;
 		if (_hintLabel  != null) _hintLabel.Visible = false;
 
+		_currentSongName = songName;
 		var scores = ScoreStorage.GetTopScores(songName, 10);
+		if (_clearButton != null) _clearButton.Disabled = scores.Count == 0;
 
 		if (scores.Count == 0)
 		{
@@ -141,6 +160,13 @@ public partial class Leaderboard : Control
 			row.AddThemeColorOverride("font_color", rowColor);
 			_scoreList.AddChild(row);
 		}
+	}
+
+	private void ClearScoresForCurrentSong()
+	{
+		if (string.IsNullOrEmpty(_currentSongName)) return;
+		ScoreStorage.ClearScores(_currentSongName);
+		ShowScores(_currentSongName);
 	}
 
 	private static Label BuildScoreRow(string rank, string name, string score, string grade, string acc, string combo)
