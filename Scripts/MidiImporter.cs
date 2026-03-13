@@ -598,7 +598,7 @@ public static class MidiImporter
         while (pos < end)
         {
             int b = data[pos]; pos++;
-            val = (val << 7) | (b & 0x7F);
+            val = (val << 7) | (long)(b & 0x7F);
             if ((b & 0x80) == 0) break;
         }
         return val;
