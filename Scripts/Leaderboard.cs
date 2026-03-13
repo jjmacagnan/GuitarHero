@@ -178,9 +178,8 @@ public partial class Leaderboard : Control
 					continue;
 				}
 
-				// Resolve o nome exatamente como SongSelectMenu + LoadingScreen:
-				// 1) song.ini → "Artista - Nome"
-				// 2) notes.chart → SongName (sobrescreve se existir)
+				// Resolve o nome do mesmo modo que SongSelectMenu: prefer song.ini (Artist - Title),
+				// caso contrário usa o nome da pasta.
 				string displayName = entry;
 				string iniPath = dir + "song.ini";
 				if (FileAccess.FileExists(iniPath))
@@ -188,14 +187,6 @@ public partial class Leaderboard : Control
 					var info = SongIniReader.Read(iniPath);
 					string iniName = SongIniReader.BuildDisplayName(info, entry);
 					if (!string.IsNullOrEmpty(iniName)) displayName = iniName;
-				}
-
-				string chartPath = dir + "notes.chart";
-				if (FileAccess.FileExists(chartPath))
-				{
-					var imported = ChartImporter.Import(chartPath);
-					if (imported != null && !string.IsNullOrEmpty(imported.SongName))
-						displayName = imported.SongName;
 				}
 
 				result.Add(displayName);
@@ -206,9 +197,7 @@ public partial class Leaderboard : Control
 				{
 					if (entry.ToLower().EndsWith(ext))
 					{
-						int dot = entry.LastIndexOf('.');
-						string name = dot >= 0 ? entry[..dot] : entry;
-						result.Add(name);
+						result.Add(CleanName(entry));
 						break;
 					}
 				}
@@ -217,6 +206,20 @@ public partial class Leaderboard : Control
 		}
 		access.ListDirEnd();
 		return result;
+	}
+
+	/// <summary>
+	/// Remove extensão e numeração inicial: "02 Master of Puppets.ogg" → "Master of Puppets"
+	/// (copiado de SongSelectMenu.CleanName para garantir consistência)
+	/// </summary>
+	private static string CleanName(string fileName)
+	{
+		int dot = fileName.LastIndexOf('.');
+		string name = dot >= 0 ? fileName[..dot] : fileName;
+		int i = 0;
+		while (i < name.Length && (char.IsDigit(name[i]) || name[i] == '.' || name[i] == ' '))
+			i++;
+		return i > 0 && i < name.Length ? name[i..].Trim() : name.Trim();
 	}
 
 	/// <summary>Verifica se a pasta tem pelo menos um arquivo de áudio reconhecido.</summary>
