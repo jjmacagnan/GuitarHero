@@ -12,6 +12,8 @@ public partial class Leaderboard : Control
 	private Label         _scoreTitle;
 	private Label         _hintLabel;
 	private Button        _backButton;
+    private Button        _clearButton;
+    private string        _currentSongName = "";
 
 	// Reutiliza o scanner de músicas do SongSelectMenu
 	private static readonly string[] LooseAudioExtensions = { ".ogg", ".mp3", ".wav" };
@@ -27,15 +29,39 @@ public partial class Leaderboard : Control
 		_hintLabel  = GetNodeOrNull<Label>("VBox/HSplit/ScorePanel/HintLabel");
 		_backButton = GetNodeOrNull<Button>("VBox/BackButton");
 
+		PopulateSongs();
+
+		// Locale texts
+		ApplyLocale();
+
+		// Cria/obtém botão de limpar scores dentro do painel de scores
+		var scorePanel = GetNodeOrNull<Control>("VBox/HSplit/ScorePanel");
+		if (scorePanel != null)
+		{
+			_clearButton = scorePanel.GetNodeOrNull<Button>("ClearButton");
+			if (_clearButton == null)
+			{
+				_clearButton = new Button { Text = Locale.Tr("CLEAR_SCORES"), CustomMinimumSize = new Vector2(120, 36), FocusMode = Control.FocusModeEnum.All };
+				_clearButton.AddThemeFontSizeOverride("font_size", 14);
+				scorePanel.AddChild(_clearButton);
+			}
+			_clearButton.Pressed += () => ClearScoresForCurrentSong();
+			_clearButton.Disabled = true;
+		}
+	}
+
+	private void ApplyLocale()
+	{
 		if (_titleLabel != null) _titleLabel.Text = Locale.Tr("LEADERBOARD");
 		if (_backButton != null)
 		{
 			_backButton.Text = Locale.Tr("BACK");
+			// ensure back action is connected
+			_backButton.Pressed -= () => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
 			_backButton.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
 		}
 		if (_hintLabel != null) _hintLabel.Text = Locale.Tr("SELECT_SONG_LB");
-
-		PopulateSongs();
+		if (_clearButton != null) _clearButton.Text = Locale.Tr("CLEAR_SCORES");
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -98,7 +124,9 @@ public partial class Leaderboard : Control
 		if (_scoreTitle != null) _scoreTitle.Text = songName;
 		if (_hintLabel  != null) _hintLabel.Visible = false;
 
+		_currentSongName = songName;
 		var scores = ScoreStorage.GetTopScores(songName, 10);
+		if (_clearButton != null) _clearButton.Disabled = scores.Count == 0;
 
 		if (scores.Count == 0)
 		{
@@ -143,6 +171,13 @@ public partial class Leaderboard : Control
 		}
 	}
 
+	private void ClearScoresForCurrentSong()
+	{
+		if (string.IsNullOrEmpty(_currentSongName)) return;
+		ScoreStorage.ClearScores(_currentSongName);
+		ShowScores(_currentSongName);
+	}
+
 	private static Label BuildScoreRow(string rank, string name, string score, string grade, string acc, string combo)
 	{
 		// Trunca nome se muito longo
@@ -178,9 +213,8 @@ public partial class Leaderboard : Control
 					continue;
 				}
 
-				// Resolve o nome exatamente como SongSelectMenu + LoadingScreen:
-				// 1) song.ini → "Artista - Nome"
-				// 2) notes.chart → SongName (sobrescreve se existir)
+				// Resolve o nome do mesmo modo que SongSelectMenu: prefer song.ini (Artist - Title),
+				// caso contrário usa o nome da pasta.
 				string displayName = entry;
 				string iniPath = dir + "song.ini";
 				if (FileAccess.FileExists(iniPath))
@@ -188,14 +222,6 @@ public partial class Leaderboard : Control
 					var info = SongIniReader.Read(iniPath);
 					string iniName = SongIniReader.BuildDisplayName(info, entry);
 					if (!string.IsNullOrEmpty(iniName)) displayName = iniName;
-				}
-
-				string chartPath = dir + "notes.chart";
-				if (FileAccess.FileExists(chartPath))
-				{
-					var imported = ChartImporter.Import(chartPath);
-					if (imported != null && !string.IsNullOrEmpty(imported.SongName))
-						displayName = imported.SongName;
 				}
 
 				result.Add(displayName);
@@ -206,9 +232,7 @@ public partial class Leaderboard : Control
 				{
 					if (entry.ToLower().EndsWith(ext))
 					{
-						int dot = entry.LastIndexOf('.');
-						string name = dot >= 0 ? entry[..dot] : entry;
-						result.Add(name);
+						result.Add(CleanName(entry));
 						break;
 					}
 				}
@@ -217,6 +241,20 @@ public partial class Leaderboard : Control
 		}
 		access.ListDirEnd();
 		return result;
+	}
+
+	/// <summary>
+	/// Remove extensão e numeração inicial: "02 Master of Puppets.ogg" → "Master of Puppets"
+	/// (copiado de SongSelectMenu.CleanName para garantir consistência)
+	/// </summary>
+	private static string CleanName(string fileName)
+	{
+		int dot = fileName.LastIndexOf('.');
+		string name = dot >= 0 ? fileName[..dot] : fileName;
+		int i = 0;
+		while (i < name.Length && (char.IsDigit(name[i]) || name[i] == '.' || name[i] == ' '))
+			i++;
+		return i > 0 && i < name.Length ? name[i..].Trim() : name.Trim();
 	}
 
 	/// <summary>Verifica se a pasta tem pelo menos um arquivo de áudio reconhecido.</summary>
