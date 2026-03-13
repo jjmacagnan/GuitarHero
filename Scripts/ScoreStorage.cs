@@ -96,4 +96,14 @@ public static class ScoreStorage
         using var file = FileAccess.Open(ScoresPath, FileAccess.ModeFlags.Write);
         file?.StoreString(json);
     }
+
+    /// <summary>
+    /// Remove todos os scores de uma música e persiste a alteração.
+    /// </summary>
+    public static void ClearScores(string songName)
+    {
+        EnsureLoaded();
+        if (string.IsNullOrEmpty(songName)) return;
+        if (_scores.Remove(songName)) SaveAll();
+    }
 }

@@ -112,5 +112,6 @@ public static class Locale
         ["KB_SPACE"]        = new() { [Language.PT] = "ESPAÇO",              [Language.EN] = "SPACE" },
         ["KB_BACKSPACE"]    = new() { [Language.PT] = "APAGAR",              [Language.EN] = "DELETE" },
         ["KB_CLEAR"]        = new() { [Language.PT] = "LIMPAR",              [Language.EN] = "CLEAR" },
+        ["CLEAR_SCORES"]    = new() { [Language.PT] = "Limpar scores",      [Language.EN] = "Clear Scores" },
     };
 }
