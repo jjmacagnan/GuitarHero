@@ -29,15 +29,10 @@ public partial class Leaderboard : Control
 		_hintLabel  = GetNodeOrNull<Label>("VBox/HSplit/ScorePanel/HintLabel");
 		_backButton = GetNodeOrNull<Button>("VBox/BackButton");
 
-		if (_titleLabel != null) _titleLabel.Text = Locale.Tr("LEADERBOARD");
-		if (_backButton != null)
-		{
-			_backButton.Text = Locale.Tr("BACK");
-			_backButton.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
-		}
-		if (_hintLabel != null) _hintLabel.Text = Locale.Tr("SELECT_SONG_LB");
-
 		PopulateSongs();
+
+		// Locale texts
+		ApplyLocale();
 
 		// Cria/obtém botão de limpar scores dentro do painel de scores
 		var scorePanel = GetNodeOrNull<Control>("VBox/HSplit/ScorePanel");
@@ -53,6 +48,20 @@ public partial class Leaderboard : Control
 			_clearButton.Pressed += () => ClearScoresForCurrentSong();
 			_clearButton.Disabled = true;
 		}
+	}
+
+	private void ApplyLocale()
+	{
+		if (_titleLabel != null) _titleLabel.Text = Locale.Tr("LEADERBOARD");
+		if (_backButton != null)
+		{
+			_backButton.Text = Locale.Tr("BACK");
+			// ensure back action is connected
+			_backButton.Pressed -= () => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
+			_backButton.Pressed += () => GetTree().ChangeSceneToFile("res://Scenes/MainMenu.tscn");
+		}
+		if (_hintLabel != null) _hintLabel.Text = Locale.Tr("SELECT_SONG_LB");
+		if (_clearButton != null) _clearButton.Text = Locale.Tr("CLEAR_SCORES");
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
