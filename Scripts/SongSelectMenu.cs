@@ -22,6 +22,9 @@ public partial class SongSelectMenu : Control
     private Label           _titleLabel;
     private Button          _backButton;
     private AudioStreamPlayer _previewPlayer;
+    private Button _playingButton;
+
+    private static readonly Color PlayingColor = new(0.2f, 0.9f, 1f);   // ciano
 
     private readonly List<Button> _songButtons = new();
 
@@ -109,6 +112,7 @@ public partial class SongSelectMenu : Control
             btn.FocusEntered += () =>
             {
                 _scrollContainer?.EnsureControlVisible(btn);
+                SetPlayingButton(btn);
                 PlayPreview(capturedPath);
             };
 
@@ -203,6 +207,22 @@ public partial class SongSelectMenu : Control
     }
 
     // ── Preview de áudio ───────────────────────────────────────────────────
+
+    private void SetPlayingButton(Button btn)
+    {
+        // Remove indicação visual do botão anterior
+        if (_playingButton != null && IsInstanceValid(_playingButton))
+        {
+            _playingButton.RemoveThemeColorOverride("font_color");
+            _playingButton.Text = _playingButton.Text.TrimStart('♪', ' ');
+        }
+
+        // Aplica indicação visual no botão atual
+        _playingButton = btn;
+        btn.AddThemeColorOverride("font_color", PlayingColor);
+        if (!btn.Text.StartsWith("♪"))
+            btn.Text = "♪ " + btn.Text;
+    }
 
     private void PlayPreview(string audioPath)
     {
