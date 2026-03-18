@@ -136,36 +136,38 @@ public static class KeybindingStorage
     /// <summary>
     /// Gera a string de hint de controles dinamicamente a partir dos bindings atuais.
     /// Retorna duas linhas separadas por \n:
-    ///   Linha 1 (teclado): "[A] Verde   [S] Vermelho   ..."  + opcional "| [ESC] Pausar"
-    ///   Linha 2 (gamepad): "(L2) Verde  (L1) Vermelho  ..."
+    ///   Linha 1: "Teclado:  [A] Verde   [S] Vermelho   ...   |   [ESC] Pausar"
+    ///   Linha 2: "Controle: (L2) Verde  (L1) Vermelho  ...   |   [+] Pausar"
+    /// O sufixo de pausa só é adicionado quando <paramref name="includePauseHint"/> for true.
     /// </summary>
-    public static string BuildControlsHint(bool includeEscHint = false)
+    public static string BuildControlsHint(bool includePauseHint = false)
     {
         EnsureLoaded();
 
-        var kbParts  = new string[5];
-        var gpParts  = new string[5];
+        var kbParts = new string[5];
+        var gpParts = new string[5];
 
         for (int i = 0; i < 5; i++)
         {
             string laneName = Locale.Tr(LaneNameKeys[i]);
 
-            // Teclado
             string keyName = OS.GetKeycodeString(_keys![i]);
             kbParts[i] = Locale.Tr("LANE_HINT_FMT", keyName, laneName);
 
-            // Gamepad
             string gpName = _isAxis![i]
                 ? AxisDisplayName(_axes![i])
                 : ButtonDisplayName(_buttons![i]);
             gpParts[i] = Locale.Tr("GAMEPAD_LANE_HINT_FMT", gpName, laneName);
         }
 
-        string kbLine = string.Join("   ", kbParts);
-        if (includeEscHint)
-            kbLine += "   |   " + Locale.Tr("PAUSE_HINT");
+        string kbLine = Locale.Tr("KEYBOARD_PREFIX") + "  " + string.Join("   ", kbParts);
+        string gpLine = Locale.Tr("GAMEPAD_PREFIX")  + " " + string.Join("   ", gpParts);
 
-        string gpLine = string.Join("   ", gpParts);
+        if (includePauseHint)
+        {
+            kbLine += "   |   " + Locale.Tr("PAUSE_HINT");
+            gpLine += "   |   " + Locale.Tr("GAMEPAD_PAUSE_HINT");
+        }
 
         return kbLine + "\n" + gpLine;
     }
