@@ -129,6 +129,31 @@ public static class KeybindingStorage
         }
     }
 
+    // ── Nomes dos lane names (ordem fixa: Verde, Vermelho, Amarelo, Azul, Laranja) ──
+    private static readonly string[] LaneNameKeys =
+        { "LANE_GREEN", "LANE_RED", "LANE_YELLOW", "LANE_BLUE", "LANE_ORANGE" };
+
+    /// <summary>
+    /// Gera a string de hint de teclas dinamicamente a partir dos bindings atuais.
+    /// Ex: "[A] Verde   [S] Vermelho   [J] Amarelo   [K] Azul   [L] Laranja"
+    /// Se <paramref name="includeEscHint"/> for true, acrescenta "  |   [ESC] Pausar".
+    /// </summary>
+    public static string BuildControlsHint(bool includeEscHint = false)
+    {
+        EnsureLoaded();
+        var parts = new string[5];
+        for (int i = 0; i < 5; i++)
+        {
+            string keyName  = OS.GetKeycodeString(_keys![i]);
+            string laneName = Locale.Tr(LaneNameKeys[i]);
+            parts[i] = Locale.Tr("LANE_HINT_FMT", keyName, laneName);
+        }
+        string hint = string.Join("   ", parts);
+        if (includeEscHint)
+            hint += "   |   " + Locale.Tr("PAUSE_HINT");
+        return hint;
+    }
+
     // ── Privado ───────────────────────────────────────────────────────────
 
     private static void EnsureLoaded()

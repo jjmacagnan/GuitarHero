@@ -93,7 +93,7 @@ public partial class GameManager : Node3D
 		_feedbackLabel = GetNodeOrNull<Label>("HUD/FeedbackLabel");
 		_accuracyLabel = GetNodeOrNull<Label>("HUD/AccuracyLabel");
 		_keyHintsLabel = GetNodeOrNull<Label>("HUD/KeyHints");
-		if (_keyHintsLabel != null) _keyHintsLabel.Text = Locale.Tr("CONTROLS_HINT_GAME");
+		if (_keyHintsLabel != null) _keyHintsLabel.Text = KeybindingStorage.BuildControlsHint(includeEscHint: true);
 
 		// Inicializa lanes
 		_lanes = new Lane[5];

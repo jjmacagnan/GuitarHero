@@ -115,6 +115,10 @@ public static class Locale
         ["KB_CLEAR"]        = new() { [Language.PT] = "LIMPAR",              [Language.EN] = "CLEAR" },
         ["CLEAR_SCORES"]    = new() { [Language.PT] = "Limpar scores",      [Language.EN] = "Clear Scores" },
 
+        // ── Hint de teclas (gerado dinamicamente com as teclas mapeadas) ──
+        ["LANE_HINT_FMT"]    = new() { [Language.PT] = "[{0}] {1}",    [Language.EN] = "[{0}] {1}" },
+        ["PAUSE_HINT"]       = new() { [Language.PT] = "[ESC] Pausar", [Language.EN] = "[ESC] Pause" },
+
         // ── Configurações / Remapeamento ───────────────────────────────
         ["SETTINGS"]         = new() { [Language.PT] = "Configurações",              [Language.EN] = "Settings" },
         ["SETTINGS_TITLE"]   = new() { [Language.PT] = "CONFIGURAÇÕES",             [Language.EN] = "SETTINGS" },
