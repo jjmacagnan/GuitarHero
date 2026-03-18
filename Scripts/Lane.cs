@@ -171,6 +171,29 @@ public partial class Lane : Node3D
 	{
 		if (@event.IsEcho()) return;
 
+		// ── Touch input (Android / tablet) ────────────────────────────────
+		// A tela é dividida em 5 zonas horizontais iguais, uma por lane.
+		// O toque na zona inferior (75% baixo) evita conflito com a UI do HUD.
+		if (@event is InputEventScreenTouch evTouch)
+		{
+			Vector2 viewSize = GetViewport().GetVisibleRect().Size;
+			// Ignora toques na faixa superior do ecrã (HUD / botão de pausa)
+			if (evTouch.Position.Y < viewSize.Y * 0.25f) return;
+
+			float zoneWidth = viewSize.X / 5f;
+			int touchLane   = Mathf.Clamp((int)(evTouch.Position.X / zoneWidth), 0, 4);
+			if (touchLane != LaneIndex) return;
+
+			if (evTouch.Pressed)
+				OnKeyPressed();
+			else
+				OnKeyReleased();
+
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+
+		// ── Teclado / Gamepad ─────────────────────────────────────────────
 		string action = $"lane_{LaneIndex}";
 		if (!InputMap.HasAction(action)) return;
 
