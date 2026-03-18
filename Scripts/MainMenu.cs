@@ -75,6 +75,6 @@ public partial class MainMenu : Control
 		if (_leaderboardButton != null) _leaderboardButton.Text = Locale.Tr("LEADERBOARD");
 		if (_creditsButton     != null) _creditsButton.Text     = Locale.Tr("CREDITS");
 		if (_settingsButton    != null) _settingsButton.Text    = Locale.Tr("SETTINGS");
-		if (_controlsLabel     != null) _controlsLabel.Text     = KeybindingStorage.BuildControlsHint();
+		if (_controlsLabel     != null) _controlsLabel.Text     = KeybindingStorage.BuildControlsHint(includePauseHint: true);
 	}
 }
