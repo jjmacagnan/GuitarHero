@@ -115,6 +115,21 @@ public static class Locale
         ["KB_CLEAR"]        = new() { [Language.PT] = "LIMPAR",              [Language.EN] = "CLEAR" },
         ["CLEAR_SCORES"]    = new() { [Language.PT] = "Limpar scores",      [Language.EN] = "Clear Scores" },
 
+        // ── Configurações / Remapeamento ───────────────────────────────
+        ["SETTINGS"]         = new() { [Language.PT] = "Configurações",              [Language.EN] = "Settings" },
+        ["SETTINGS_TITLE"]   = new() { [Language.PT] = "CONFIGURAÇÕES",             [Language.EN] = "SETTINGS" },
+        ["KEYBOARD_TAB"]     = new() { [Language.PT] = "Teclado",                   [Language.EN] = "Keyboard" },
+        ["GAMEPAD_TAB"]      = new() { [Language.PT] = "Controle",                  [Language.EN] = "Gamepad" },
+        ["LANE_GREEN"]       = new() { [Language.PT] = "Verde",                     [Language.EN] = "Green" },
+        ["LANE_RED"]         = new() { [Language.PT] = "Vermelho",                  [Language.EN] = "Red" },
+        ["LANE_YELLOW"]      = new() { [Language.PT] = "Amarelo",                   [Language.EN] = "Yellow" },
+        ["LANE_BLUE"]        = new() { [Language.PT] = "Azul",                      [Language.EN] = "Blue" },
+        ["LANE_ORANGE"]      = new() { [Language.PT] = "Laranja",                   [Language.EN] = "Orange" },
+        ["PRESS_KEY"]        = new() { [Language.PT] = "[ Pressione uma tecla ]",   [Language.EN] = "[ Press a key ]" },
+        ["PRESS_BUTTON"]     = new() { [Language.PT] = "[ Pressione um botão ]",    [Language.EN] = "[ Press a button ]" },
+        ["RESET_DEFAULTS"]   = new() { [Language.PT] = "Restaurar Padrões",         [Language.EN] = "Reset to Defaults" },
+        ["SETTINGS_SAVED"]   = new() { [Language.PT] = "Salvo!",                    [Language.EN] = "Saved!" },
+
         // ── Créditos e Licença ─────────────────────────────────────────
         ["CREDITS"]                  = new() { [Language.PT] = "Créditos",                        [Language.EN] = "Credits" },
         ["CREDITS_TITLE"]            = new() { [Language.PT] = "CRÉDITOS E LICENÇA",              [Language.EN] = "CREDITS & LICENSE" },
