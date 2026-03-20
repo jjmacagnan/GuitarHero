@@ -25,21 +25,24 @@ public partial class Credits : Control
         "OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE " +
         "SOFTWARE.";
 
-    private Label  _titleLabel;
-    private Label  _aboutTitleLabel;
-    private Label  _aboutTextLabel;
-    private Label  _dedicationTitleLabel;
-    private Label  _dedicationTextLabel;
-    private Label  _developerTitleLabel;
-    private Label  _developerTextLabel;
-    private Label  _githubProfileLabel;
-    private Label  _githubProjectLabel;
-    private Label  _linkedInLabel;
-    private Label  _techTitleLabel;
-    private Label  _techTextLabel;
-    private Label  _licenseTitleLabel;
-    private Label  _licenseTextLabel;
-    private Button _backButton;
+    private Label      _titleLabel;
+    private Label      _aboutTitleLabel;
+    private Label      _aboutTextLabel;
+    private Label      _dedicationTitleLabel;
+    private Label      _dedicationTextLabel;
+    private Label      _developerTitleLabel;
+    private Label      _developerTextLabel;
+    private Label      _githubProfileLabel;
+    private LinkButton _githubProfileValue;
+    private Label      _githubProjectLabel;
+    private LinkButton _githubProjectValue;
+    private Label      _linkedInLabel;
+    private LinkButton _linkedInValue;
+    private Label      _techTitleLabel;
+    private Label      _techTextLabel;
+    private Label      _licenseTitleLabel;
+    private Label      _licenseTextLabel;
+    private Button     _backButton;
 
     public override void _Ready()
     {
@@ -51,8 +54,11 @@ public partial class Credits : Control
         _developerTitleLabel  = GetNodeOrNull<Label>("VBox/Scroll/Content/DeveloperTitleLabel");
         _developerTextLabel   = GetNodeOrNull<Label>("VBox/Scroll/Content/DeveloperTextLabel");
         _githubProfileLabel   = GetNodeOrNull<Label>("VBox/Scroll/Content/GitHubProfileRow/GitHubProfileLabel");
+        _githubProfileValue   = GetNodeOrNull<LinkButton>("VBox/Scroll/Content/GitHubProfileRow/GitHubProfileValue");
         _githubProjectLabel   = GetNodeOrNull<Label>("VBox/Scroll/Content/GitHubProjectRow/GitHubProjectLabel");
+        _githubProjectValue   = GetNodeOrNull<LinkButton>("VBox/Scroll/Content/GitHubProjectRow/GitHubProjectValue");
         _linkedInLabel        = GetNodeOrNull<Label>("VBox/Scroll/Content/LinkedInRow/LinkedInLabel");
+        _linkedInValue        = GetNodeOrNull<LinkButton>("VBox/Scroll/Content/LinkedInRow/LinkedInValue");
         _techTitleLabel       = GetNodeOrNull<Label>("VBox/Scroll/Content/TechTitleLabel");
         _techTextLabel        = GetNodeOrNull<Label>("VBox/Scroll/Content/TechTextLabel");
         _licenseTitleLabel    = GetNodeOrNull<Label>("VBox/Scroll/Content/LicenseTitleLabel");
@@ -60,6 +66,9 @@ public partial class Credits : Control
         _backButton           = GetNodeOrNull<Button>("VBox/BackButton");
 
         if (_backButton != null) _backButton.Pressed += OnBackPressed;
+        if (_githubProfileValue != null) _githubProfileValue.Pressed += () => OS.ShellOpen("https://github.com/jjmacagnan");
+        if (_githubProjectValue != null) _githubProjectValue.Pressed += () => OS.ShellOpen("https://github.com/jjmacagnan/GuitarMetal");
+        if (_linkedInValue != null) _linkedInValue.Pressed += () => OS.ShellOpen("https://www.linkedin.com/in/jjmacagnan/");
         _backButton?.CallDeferred(Control.MethodName.GrabFocus);
 
         ApplyLocale();
