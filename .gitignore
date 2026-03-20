@@ -8,11 +8,13 @@
 # Claude Code
 .claude/
 
-# Android export (não versionar APK nem keystore)
+# Exports (Android e iOS)
+export/
 *.apk
 *.idsig
 *.keystore
 *.jks
+*.ipa
 
 # Áudio e charts (assets pesados, não versionados)
 Audio/*
