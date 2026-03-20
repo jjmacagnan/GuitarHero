@@ -42,7 +42,8 @@ res://
 │   ├── KeybindingStorage.cs ← Custom keybinding persistence and application
 │   ├── Locale.cs            ← PT/EN internationalization
 │   ├── SettingsMenu.cs      ← Settings screen (key remapping)
-│   └── Credits.cs           ← Credits and license screen
+│   ├── Credits.cs           ← Credits and license screen
+│   └── MobileUI.cs          ← Autoload: scales UI for Android and iOS
 ├── Scenes/
 │   ├── MainMenu.tscn
 │   ├── NameInput.tscn
@@ -53,8 +54,11 @@ res://
 │   ├── Results.tscn
 │   ├── Leaderboard.tscn
 │   ├── Settings.tscn
-│   └── Credits.tscn
+│   ├── Credits.tscn
+│   ├── Lane.tscn            ← Lane component (instanced by Game)
+│   └── Note.tscn            ← Note component (tap and hold)
 ├── Audio/               ← Place your .ogg/.mp3 and .chart/.mid files here (git-ignored)
+├── SFX/                 ← Game sound effects
 ├── LICENSE
 └── project.godot
 ```
@@ -98,6 +102,10 @@ MainMenu → NameInput → SongSelect → [DifficultySelect] → Loading → Gam
 | ZR / RT     | 3    | Blue   |
 | X (top)     | 4    | Orange |
 | Start / +   | —    | Pause  |
+
+### Touch (Android / iOS)
+
+On mobile devices, the game automatically detects touch zones based on the 3D projection of button positions on screen. Each lane has a corresponding touch area. Supports multi-touch for hold notes with safety against simultaneous touches.
 
 Keyboard and gamepad work simultaneously. Menu navigation via D-pad + A (confirm) / B (back).
 
@@ -215,6 +223,30 @@ Scores are saved locally in `user://scores.json` (Godot's data folder on the ope
 ## Languages
 
 The game supports **Portuguese (BR)** and **English**. The language can be changed via the language button on the main menu. The preference is applied in real time, with no restart required.
+
+---
+
+## Platforms
+
+### Desktop
+
+Runs on Windows, macOS, and Linux with Godot 4.6. Supports keyboard and/or gamepad input.
+
+### Android
+
+- Package: `br.app.jbit.guitarmetal`
+- Architectures: armeabi-v7a + arm64-v8a
+- Rendering: `gl_compatibility` (optimized for mobile)
+- Touch input with zones projected from 3D button positions
+- Full-screen immersive mode with rotation support
+- MobileUI autoload scales the interface to 1280×720 resolution
+
+### iOS
+
+- Bundle: `br.app.jbit.guitarmetal`
+- Exports a ready-to-build Xcode project
+- Apple Development signing (Team ID configurable in `export_presets.cfg`)
+- MobileUI autoload scales the interface to 1280×720 resolution
 
 ---
 
