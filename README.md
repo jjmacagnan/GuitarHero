@@ -3,7 +3,7 @@
 [![🇧🇷 Português](https://img.shields.io/badge/lang-Português-green?style=flat-square)](README.md)
 [![🇺🇸 English](https://img.shields.io/badge/lang-English-blue?style=flat-square)](README.en.md)
 
-Jogo de ritmo estilo Guitar Hero construído do zero com Godot 4.6 e C#. Suporta charts no formato Clone Hero (`.chart`) e Rock Band (`.mid`), hold notes, seleção de dificuldade, controle gamepad e teclado simultâneos, leaderboard local e internacionalização PT/EN.
+Jogo de ritmo inspirado em Guitar Hero, construído do zero com Godot 4.6 e C#. Suporta charts no formato Clone Hero (`.chart`) e Rock Band (`.mid`), hold notes, seleção de dificuldade, controle gamepad e teclado simultâneos, leaderboard local e internacionalização PT/EN.
 
 > Projeto desenvolvido para a disciplina de **Desenvolvimento de Jogos para Smartphones**, integrante da **Especialização em Programação para Dispositivos Móveis** oferecida pela **UTFPR — Universidade Tecnológica Federal do Paraná**.
 
@@ -42,7 +42,8 @@ res://
 │   ├── KeybindingStorage.cs ← Persistência e aplicação de keybindings customizados
 │   ├── Locale.cs            ← Internacionalização PT/EN
 │   ├── SettingsMenu.cs      ← Tela de configurações (remapeamento de teclas)
-│   └── Credits.cs           ← Tela de créditos e licença
+│   ├── Credits.cs           ← Tela de créditos e licença
+│   └── MobileUI.cs          ← Autoload: escala UI para Android e iOS
 ├── Scenes/
 │   ├── MainMenu.tscn
 │   ├── NameInput.tscn
@@ -53,8 +54,11 @@ res://
 │   ├── Results.tscn
 │   ├── Leaderboard.tscn
 │   ├── Settings.tscn
-│   └── Credits.tscn
+│   ├── Credits.tscn
+│   ├── Lane.tscn            ← Componente de pista (instanciado pelo Game)
+│   └── Note.tscn            ← Componente de nota (tap e hold)
 ├── Audio/               ← Coloque seus .ogg/.mp3 e .chart/.mid aqui (ignorados pelo git)
+├── SFX/                 ← Efeitos sonoros do jogo
 ├── LICENSE
 └── project.godot
 ```
@@ -98,6 +102,10 @@ MainMenu → NameInput → SongSelect → [DifficultySelect] → Loading → Gam
 | ZR / RT     | 3    | Azul     |
 | X (topo)    | 4    | Laranja  |
 | Start / +   | —    | Pausar   |
+
+### Touch (Android / iOS)
+
+Em dispositivos móveis, o jogo detecta automaticamente zonas de toque baseadas na projeção 3D dos botões na tela. Cada lane possui uma área de toque correspondente. Suporta multi-touch para hold notes com segurança contra toques simultâneos.
 
 Teclado e gamepad funcionam simultaneamente. Navegação de menus pelo D-pad + A (confirmar) / B (voltar).
 
@@ -215,6 +223,30 @@ Os scores são salvos localmente em `user://scores.json` (pasta de dados do Godo
 ## Idiomas
 
 O jogo suporta **Português (BR)** e **Inglês**. O idioma pode ser alterado pelo botão de idioma no menu principal. A preferência é aplicada em tempo real, sem necessidade de reiniciar.
+
+---
+
+## Plataformas
+
+### Desktop
+
+Funciona em Windows, macOS e Linux com Godot 4.6. Controle por teclado e/ou gamepad.
+
+### Android
+
+- Pacote: `br.app.jbit.guitarmetal`
+- Arquiteturas: armeabi-v7a + arm64-v8a
+- Renderização: `gl_compatibility` (otimizado para mobile)
+- Entrada por toque com zonas projetadas da posição 3D dos botões
+- Modo imersivo em tela cheia com suporte a rotação
+- MobileUI autoload escala a interface para resolução 1280×720
+
+### iOS
+
+- Bundle: `br.app.jbit.guitarmetal`
+- Exporta projeto Xcode pronto para build
+- Assinatura Apple Development (Team ID configurável em `export_presets.cfg`)
+- MobileUI autoload escala a interface para resolução 1280×720
 
 ---
 
