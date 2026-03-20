@@ -101,11 +101,13 @@ theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
 theme_override_font_sizes/font_size = 15
 text = "GitHub (perfil):"
 
-[node name="GitHubProfileValue" type="Label" parent="VBox/Scroll/Content/GitHubProfileRow"]
+[node name="GitHubProfileValue" type="LinkButton" parent="VBox/Scroll/Content/GitHubProfileRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_colors/font_hover_color = Color(0.6, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "https://github.com/jjmacagnan"
+underline = 2
 
 [node name="GitHubProjectRow" type="HBoxContainer" parent="VBox/Scroll/Content"]
 layout_mode = 2
@@ -117,11 +119,13 @@ theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
 theme_override_font_sizes/font_size = 15
 text = "GitHub (projeto):"
 
-[node name="GitHubProjectValue" type="Label" parent="VBox/Scroll/Content/GitHubProjectRow"]
+[node name="GitHubProjectValue" type="LinkButton" parent="VBox/Scroll/Content/GitHubProjectRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_colors/font_hover_color = Color(0.6, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "https://github.com/jjmacagnan/GuitarMetal"
+underline = 2
 
 [node name="LinkedInRow" type="HBoxContainer" parent="VBox/Scroll/Content"]
 layout_mode = 2
@@ -133,11 +137,13 @@ theme_override_colors/font_color = Color(0.6, 0.7, 0.9, 1)
 theme_override_font_sizes/font_size = 15
 text = "LinkedIn:"
 
-[node name="LinkedInValue" type="Label" parent="VBox/Scroll/Content/LinkedInRow"]
+[node name="LinkedInValue" type="LinkButton" parent="VBox/Scroll/Content/LinkedInRow"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_colors/font_hover_color = Color(0.6, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 15
 text = "https://www.linkedin.com/in/jjmacagnan/"
+underline = 2
 
 [node name="Sep3" type="HSeparator" parent="VBox/Scroll/Content"]
 layout_mode = 2
